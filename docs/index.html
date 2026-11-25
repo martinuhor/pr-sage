@@ -20,7 +20,7 @@
       <a class="hide-sm" href="#how">How it works</a>
       <a class="hide-sm" href="#video">Video</a>
       <a class="hide-sm" href="https://github.com/martinuhor/pr-sage">GitHub</a>
-      <a class="btn primary" href="#demo">Try the demo</a>
+      <a class="btn primary" href="#app">Try the app</a>
     </div>
   </div>
 </nav>
@@ -34,12 +34,12 @@
     <p class="sub">
       PR Sage installs as a GitHub App, gets a webhook when a PR opens, and runs a
       <code>ToolLoopAgent</code> that streams its reasoning and posts severity-tagged
-      comments straight onto the diff. Below is a real-time simulation of that flow.
+      comments straight onto the diff. Try the app below, or watch the recorded run.
     </p>
     <div class="actions">
-      <a class="btn primary" href="#demo">
+      <a class="btn primary" href="#app">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        Run the demo
+        Try the app
       </a>
       <a class="btn" href="#video">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
@@ -48,10 +48,19 @@
     </div>
   </header>
 
+  <!-- ------------------------------------------------- interactive app -->
+  <section id="app">
+    <div class="sec-head">
+      <h2>Try the app</h2>
+      <span class="hint">interactive · runs in your browser</span>
+    </div>
+    <div class="app-card" id="prSageApp"></div>
+  </section>
+
   <!-- ------------------------------------------------------------ demo -->
   <section id="demo">
     <div class="sec-head">
-      <h2>The simulation</h2>
+      <h2>The flow, animated</h2>
       <span class="hint">webhook → agent tools → inline review</span>
     </div>
 
@@ -131,8 +140,8 @@
       </video>
     </div>
     <p class="video-note">
-      Prefer your own copy? Hit <strong>Export video</strong> in the demo above to record the
-      canvas live to a <code>.webm</code> file in your browser.
+      Prefer your own copy? Hit <strong>Export video</strong> in the animation above to record it
+      live to a <code>.webm</code> file in your browser.
     </p>
   </section>
 
@@ -147,5 +156,6 @@
 
 <script src="assets/animation.js"></script>
 <script src="assets/demo.js"></script>
+<script src="assets/app.js"></script>
 </body>
 </html>

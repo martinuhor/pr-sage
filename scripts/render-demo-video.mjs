@@ -146,7 +146,7 @@ async function waitForDevTools(port, timeoutMs = 20000) {
 const STAGE_ONLY_CSS = `
   canvas#stage{width:1280px !important;height:720px !important;border-radius:0 !important}
   .wrap{max-width:none!important;padding:0!important}
-  nav.top,.hero,.sec-head,.controls,.stages,section#how,section#video,footer{display:none!important}
+  nav.top,.hero,.sec-head,.controls,.stages,section#app,section#how,section#video,footer{display:none!important}
   body{background:#07070a!important}
   .demo-card{border:0!important;border-radius:0!important;box-shadow:none!important;background:#07070a!important}
   .stage-wrap{padding:0!important;background:#07070a!important}
