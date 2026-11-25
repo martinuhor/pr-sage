@@ -44,7 +44,11 @@ export interface ReviewRequest {
 }
 
 export const DEFAULT_MODEL = "anthropic/claude-sonnet-4-5";
-export const DEFAULT_GOOGLE_MODEL = "gemini-2.5-flash";
+// Google gates older ids to existing accounts only ("no longer available to
+// new users"), so the default here is a current free-tier model rather than
+// the 2.5 prefix. Override with REVIEW_MODEL if the account has access to a
+// stronger one.
+export const DEFAULT_GOOGLE_MODEL = "gemini-3.5-flash-lite";
 
 /** Which provider mints the model. */
 export type ModelProvider = "gateway" | "google";
