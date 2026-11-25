@@ -169,6 +169,17 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
             </div>
           )}
 
+          {/* The stream can end without a single JSON chunk if the model call
+              fails mid-stream (e.g. a Gateway error after the response has
+              already started). Without this the panel renders as an empty
+              void, since every other branch is gated on `review`. */}
+          {!isLoading && !review && !error && (
+            <div className="p-4 rounded-xl border border-amber-900 bg-amber-950/20 text-amber-400 text-sm">
+              The review returned no output. That usually means the model call failed — check the
+              function logs for a Gateway or provider error.
+            </div>
+          )}
+
           {/* Restart button once done */}
           {review?.status === "done" && (
             <button
