@@ -33,7 +33,7 @@
     <h1 class="title">Watch an agent review<br /><span class="grad">a pull request</span></h1>
     <p class="sub">
       PR Sage installs as a GitHub App, gets a webhook when a PR opens, and runs a
-      <code>ToolLoopAgent</code> that streams its reasoning and posts severity-tagged
+      tool loop that streams its progress and posts severity-tagged
       comments straight onto the diff. Try the app below, or watch the recorded run.
     </p>
     <div class="actions">
@@ -106,12 +106,12 @@
       <div class="step">
         <div class="num">01</div>
         <h3>Webhook fires</h3>
-        <p>Opening a PR posts a <code>pull_request</code> event to <code>/api/webhook/github</code>. The HMAC-SHA256 signature is verified, then the route returns <code>202 Accepted</code> and starts the review fire-and-forget.</p>
+        <p>Opening a PR posts a <code>pull_request</code> event to <code>/api/webhook</code>. The HMAC-SHA256 signature is verified, then the route returns <code>202 Accepted</code> and starts the review fire-and-forget.</p>
       </div>
       <div class="step">
         <div class="num">02</div>
         <h3>Agent starts</h3>
-        <p>A <code>ToolLoopAgent</code> runs on <code>claude-sonnet-4-5</code>, routed through the Vercel AI Gateway — no API keys in code.</p>
+        <p>The agent runs on <code>claude-sonnet-4-5</code>, routed through the Vercel AI Gateway — no API keys in code.</p>
       </div>
       <div class="step">
         <div class="num">03</div>

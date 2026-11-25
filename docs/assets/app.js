@@ -585,7 +585,7 @@
       at: 0.2,
       k: "http",
       method: "POST",
-      path: "/api/webhook/github",
+      path: "/api/webhook",
       note: "x-github-event: pull_request · action=opened"
     });
     ev.push({ at: 1.1, k: "auth", note: "HMAC-SHA256 signature verified" });
@@ -593,7 +593,7 @@
       at: 1.6,
       k: "http",
       method: "POST",
-      path: "/api/webhook/github",
+      path: "/api/webhook",
       note: "review fired (fire-and-forget)",
       status: "202 Accepted"
     });
@@ -609,7 +609,7 @@
       at: 2.75,
       k: "model",
       label: "anthropic/claude-sonnet-4-5",
-      note: "ToolLoopAgent · AI Gateway"
+      note: "streamText · AI Gateway"
     });
     ev = ev.concat(
       tool("fetch_pr_files", "{ pr: " + p.pr + " }",
