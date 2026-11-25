@@ -1,0 +1,20 @@
+{
+  "title": "Issue and restore user sessions",
+  "description": "Adds a session helper that mints an id for a freshly authenticated user and restores an existing session from the value stored in the user's cookie.",
+  "expected": [
+    {
+      "path": "src/lib/session.ts",
+      "line": 12,
+      "severity": "critical",
+      "category": "weak-randomness",
+      "note": "The session id is derived from Math.random(), which is not cryptographically secure and is predictable enough to guess or collide. Use crypto.randomUUID() or crypto.getRandomValues() for the token."
+    },
+    {
+      "path": "src/lib/session.ts",
+      "line": 24,
+      "severity": "warning",
+      "category": "untrusted-json-parse",
+      "note": "The cookie value is parsed with JSON.parse and no try/catch, so any malformed or attacker-supplied cookie throws and crashes the request handler. Wrap the parse and validate the decoded shape before trusting it."
+    }
+  ]
+}

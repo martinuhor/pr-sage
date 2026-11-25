@@ -1,0 +1,20 @@
+{
+  "title": "Sync payment invoices into the local store",
+  "description": "Adds an invoice sync entrypoint and the repository helper it writes through. The batch runner tolerates upstream hiccups so a single bad invoice does not abort the whole run.",
+  "expected": [
+    {
+      "path": "services/payment/sync.py",
+      "line": 13,
+      "severity": "critical",
+      "category": "swallowed-exception",
+      "note": "The broad except swallows every failure and the function still returns True, so callers and metrics report success while invoices are silently dropped. Let the exception propagate (or return False) and log it at error level."
+    },
+    {
+      "path": "services/payment/repository.py",
+      "line": 9,
+      "severity": "critical",
+      "category": "sql-injection",
+      "note": "invoice_id and status are interpolated straight into the SQL string with an f-string, so any quote in the input breaks out of the literal and injects SQL. Use parameter placeholders ($1, $2, $3) and pass the values as query arguments."
+    }
+  ]
+}

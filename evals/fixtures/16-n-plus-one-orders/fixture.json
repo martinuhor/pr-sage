@@ -1,0 +1,20 @@
+{
+  "title": "Load orders and list admins for the console",
+  "description": "Adds the repository helpers that the order history page and the internal admin console call to fetch their data.",
+  "expected": [
+    {
+      "path": "src/repositories/orderRepo.ts",
+      "line": 14,
+      "severity": "warning",
+      "category": "unbounded-query",
+      "note": "A query for the line items runs inside the loop over orders, so loading N orders issues N+1 round-trips and the cost grows with the result set. Fetch all items in one query (WHERE order_id = ANY($1)) and group them in memory."
+    },
+    {
+      "path": "src/repositories/adminRepo.ts",
+      "line": 15,
+      "severity": "warning",
+      "category": "sensitive-data-exposure",
+      "note": "password_hash is selected and returned to the caller even though the console only needs identity and role, spreading credential material beyond the auth path. Drop password_hash from the projection."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Deep-merge user settings over defaults",
+  "description": "Adds a small recursive merge helper and the settings endpoint that applies an incoming update on top of the stored defaults.",
+  "expected": [
+    {
+      "path": "src/lib/deepMerge.ts",
+      "line": 14,
+      "severity": "critical",
+      "category": "prototype-pollution",
+      "note": "The merge copies every key from untrusted source into target, including __proto__/constructor/prototype, so a request body like {\"__proto__\":{\"isAdmin\":true}} pollutes Object.prototype process-wide. Skip dangerous keys and build the result on a null-prototype object (or use Object.create(null) / a vetted merge)."
+    }
+  ]
+}

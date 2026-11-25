@@ -1,0 +1,20 @@
+{
+  "title": "Add wallet credit and debit helpers",
+  "description": "Adds the service helpers the transfer flow uses to move funds in and out of a user's wallet.",
+  "expected": [
+    {
+      "path": "src/services/wallet.ts",
+      "line": 16,
+      "severity": "critical",
+      "category": "race-condition",
+      "note": "The balance is read, adjusted in application code and written back, so two concurrent credits both read the same starting balance and the second write wins, losing money. Do the arithmetic in a single atomic statement (UPDATE wallets SET balance_cents = balance_cents + $1 ...) or wrap the read-modify-write in a transaction with a row lock."
+    },
+    {
+      "path": "src/services/wallet.ts",
+      "line": 28,
+      "severity": "warning",
+      "category": "missing-await",
+      "note": "The UPDATE is not awaited, so debitWallet resolves before the write completes and any rejection becomes an unhandled promise. Await the db.query call (and consider returning the updated balance)."
+    }
+  ]
+}

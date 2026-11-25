@@ -1,0 +1,20 @@
+{
+  "title": "Show the account greeting and avatar fallback",
+  "description": "Adds a greeting helper for the account header and an avatar helper that falls back to the user's initials when they have not uploaded a picture.",
+  "expected": [
+    {
+      "path": "src/lib/user.ts",
+      "line": 14,
+      "severity": "critical",
+      "category": "null-deref",
+      "note": "`profile` is typed `Profile | null` and `displayName` is optional, so this dereference throws for a logged-out visitor or a profile without a display name. Guard both: bail out (or use `formatName`) when `profile` or `profile.displayName` is missing."
+    },
+    {
+      "path": "src/lib/avatar.ts",
+      "line": 11,
+      "severity": "warning",
+      "category": "missing-return",
+      "note": "The function declares a `string` return type but returns nothing when `imageUrl` is unset, so callers get `undefined`. It must return the initials-based fallback in that branch."
+    }
+  ]
+}

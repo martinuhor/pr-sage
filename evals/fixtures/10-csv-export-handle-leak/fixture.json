@@ -1,0 +1,20 @@
+{
+  "title": "Add a CSV export for the orders report",
+  "description": "Backs the finance team's report download with a service that writes orders to a CSV file and a helper that tallies counts by status for the header.",
+  "expected": [
+    {
+      "path": "services/reports/export.py",
+      "line": 8,
+      "severity": "warning",
+      "category": "resource-leak",
+      "note": "The file returned by `open(...)` is never closed (no `with` block and no `handle.close()`), so every export leaks a file descriptor until GC runs and can exhaust the process's handles. Use a `with open(...) as handle:` block."
+    },
+    {
+      "path": "services/reports/export.py",
+      "line": 15,
+      "severity": "warning",
+      "category": "mutable-default-argument",
+      "note": "The default `totals={}` is evaluated once at definition time and shared across every call, so counts accumulate between exports instead of starting empty. Default to `None` and create a fresh dict inside the function."
+    }
+  ]
+}

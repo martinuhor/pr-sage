@@ -1,0 +1,13 @@
+{
+  "title": "Sort the weekly leaderboard by score",
+  "description": "Refactors the leaderboard sort helper and wires it into the endpoint that returns the top players of the week.",
+  "expected": [
+    {
+      "path": "src/utils/leaderboard.ts",
+      "line": 11,
+      "severity": "warning",
+      "category": "wrong-comparator",
+      "note": "Scores are numbers but they are compared as strings, so they sort lexicographically: 100 comes before 9 and long scores land in the wrong place. Compare numerically, e.g. `b.score - a.score` for the intended high-to-low order."
+    }
+  ]
+}

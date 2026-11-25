@@ -1,0 +1,20 @@
+{
+  "title": "Add a batching helper for the events pipeline",
+  "description": "The ingest worker processes events in fixed-size batches. This adds a shared `chunk` helper plus a small `walk` utility used to fan a range of indexes out to a callback.",
+  "expected": [
+    {
+      "path": "src/lib/chunk.js",
+      "line": 8,
+      "severity": "warning",
+      "category": "off-by-one",
+      "note": "Array.prototype.slice's end index is exclusive, so `i + size - 1` drops the last item of every batch. Each batch processes one element too few and the final item of the list is never included; the end index should be `i + size`."
+    },
+    {
+      "path": "src/lib/chunk.js",
+      "line": 18,
+      "severity": "critical",
+      "category": "infinite-loop",
+      "note": "The while loop never advances `i`, so `walk` spins forever and hangs the worker the moment it is called with a non-empty range. Add `i += 1;` inside the loop body."
+    }
+  ]
+}

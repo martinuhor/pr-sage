@@ -1,0 +1,20 @@
+{
+  "title": "Serve uploaded attachments through the API",
+  "description": "Adds a helper that reads a user's uploaded attachment from disk and a small checksum utility the download response advertises in its Content-Digest header.",
+  "expected": [
+    {
+      "path": "src/lib/download.ts",
+      "line": 10,
+      "severity": "critical",
+      "category": "path-traversal",
+      "note": "`fileName` comes from the request and is joined straight onto `UPLOADS_DIR`, so `../../etc/passwd` (or an absolute path) escapes the uploads directory and lets a caller read arbitrary files. Resolve the path and verify it stays within `UPLOADS_DIR`, or reject names containing `..`, `/` or `\\`."
+    },
+    {
+      "path": "src/lib/checksum.ts",
+      "line": 9,
+      "severity": "warning",
+      "category": "missing-return",
+      "note": "The function declares a `string` return type but computes `digest` and never returns it, so callers receive `undefined`. Add `return digest;`."
+    }
+  ]
+}

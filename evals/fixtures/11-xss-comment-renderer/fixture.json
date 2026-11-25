@@ -1,0 +1,20 @@
+{
+  "title": "Render PR comments with HTML formatting",
+  "description": "Adds a CommentRenderer that preserves an author's formatting and a CommentList that shows every comment on a pull request with a permalink back to GitHub.",
+  "expected": [
+    {
+      "path": "src/components/CommentRenderer.tsx",
+      "line": 17,
+      "severity": "critical",
+      "category": "xss",
+      "note": "The comment body is fully user-controlled and is handed straight to dangerouslySetInnerHTML, so any markup a commenter writes (including <script>/<img onerror=...>) runs in every reader's browser. Sanitize the HTML first (e.g. DOMPurify) or render the body as text instead of raw HTML."
+    },
+    {
+      "path": "src/components/CommentList.tsx",
+      "line": 15,
+      "severity": "warning",
+      "category": "reverse-tabnabbing",
+      "note": "This external link opens with target=\"_blank\" but no rel=\"noopener noreferrer\", so the destination page can reach back through window.opener and navigate the app. Add rel=\"noopener noreferrer\"."
+    }
+  ]
+}

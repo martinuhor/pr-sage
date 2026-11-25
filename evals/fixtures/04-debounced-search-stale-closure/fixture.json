@@ -1,0 +1,13 @@
+{
+  "title": "Add a debounced search box to the dashboard",
+  "description": "Wraps the dashboard search field so queries are only sent once the user pauses typing, instead of on every keystroke.",
+  "expected": [
+    {
+      "path": "src/components/SearchBox.tsx",
+      "line": 19,
+      "severity": "warning",
+      "category": "stale-closure",
+      "note": "The effect reads `query` but its dependency array is empty, so the timeout closure captures the first render's `query` forever and `onResults` is always called with the initial (empty) value. Add `query` (and `onResults`) to the dependency array."
+    }
+  ]
+}

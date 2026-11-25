@@ -2,14 +2,15 @@
   "name": "pr-sage",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-powered code review agent built on Vercel AI SDK, AI Gateway, and eve",
+  "description": "AI-powered code review agent built on the Vercel AI SDK and AI Gateway",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "agent:dev": "eve dev"
+    "test": "node --conditions=import --import tsx --test tests/webhook.test.ts tests/github-client.test.ts",
+    "eval": "tsx evals/run.ts"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^4.0.0",
@@ -17,13 +18,11 @@
     "@octokit/auth-app": "^8.3.1",
     "@octokit/rest": "^21.0.0",
     "@octokit/webhooks": "^13.0.0",
-    "@vercel/blob": "^0.27.0",
     "@vercel/config": "^0.15.0",
     "@vercel/functions": "^3.10.0",
     "@vercel/schedules": "^0.0.3",
     "ai": "^7.0.0",
     "clsx": "^2.1.0",
-    "eve": "latest",
     "lucide-react": "^0.400.0",
     "microdiff": "^1.4.0",
     "next": "^15.3.0",
@@ -34,15 +33,16 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@ai-sdk/devtools": "^1.0.85",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.0",
+    "diff": "^9.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.3.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.5.0"
   },
   "engines": {

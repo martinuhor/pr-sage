@@ -1,0 +1,20 @@
+{
+  "title": "Persist order status and audit log on shipping",
+  "description": "When an order is shipped we now persist the new status and append an entry to the audit log. Adds the event helpers the shipping job calls.",
+  "expected": [
+    {
+      "path": "src/jobs/audit.js",
+      "line": 9,
+      "severity": "warning",
+      "category": "floating-promise",
+      "note": "`recordEvent` returns a promise (it is declared `async` in ./events) but the call is not awaited, so `shipOrder` resolves before the audit write finishes and any rejection becomes an unhandled promise rejection. Await it (or return it) and handle failures."
+    },
+    {
+      "path": "src/jobs/events.js",
+      "line": 10,
+      "severity": "warning",
+      "category": "unchecked-response",
+      "note": "`fetch` does not reject on HTTP error statuses, so a 4xx/5xx response is passed straight to `response.json()` and treated as success. Check `response.ok` and throw before parsing."
+    }
+  ]
+}

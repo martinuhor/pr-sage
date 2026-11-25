@@ -1,0 +1,20 @@
+{
+  "title": "Record daily signups and expose the report",
+  "description": "Adds the nightly job that records how many users signed up and an endpoint that returns a given day's report.",
+  "expected": [
+    {
+      "path": "src/jobs/dailyReport.ts",
+      "line": 8,
+      "severity": "warning",
+      "category": "timezone",
+      "note": "The day boundaries are built with the local-time Date constructor and then serialised with toISOString(), so the window is shifted by the server's UTC offset and the job counts the wrong UTC day (and records it under the wrong date). Use Date.UTC(...) or setUTCHours(0,0,0,0) to anchor the window to UTC midnight."
+    },
+    {
+      "path": "src/api/reports.ts",
+      "line": 9,
+      "severity": "warning",
+      "category": "error-leak",
+      "note": "The 500 response includes error.stack, exposing internal file paths and code structure to clients. Return a generic message and log the stack server-side."
+    }
+  ]
+}

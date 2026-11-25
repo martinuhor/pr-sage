@@ -1,0 +1,20 @@
+{
+  "title": "Harden the order id and promo-code parsing on checkout",
+  "description": "Tightens the order id validator used by the checkout route and adds a helper that turns a promo code into the discount it applies.",
+  "expected": [
+    {
+      "path": "src/lib/validation.js",
+      "line": 7,
+      "severity": "warning",
+      "category": "loose-equality",
+      "note": "`id == parsed` uses loose equality, so a string that merely coerces to the parsed number is accepted: \"1.0\", \"01\" and \" 1\" all pass even though they are not valid integer ids. Use `===` (or keep the `Number.isInteger` check) so only an exact integer string is allowed."
+    },
+    {
+      "path": "src/lib/promo.js",
+      "line": 6,
+      "severity": "warning",
+      "category": "missing-validation",
+      "note": "The code is split on \"-\" and whatever follows is coerced to a number without validation, so a malformed code (\"SAVE\", \"SAVE-ABC\") yields `NaN` and is returned as a discount. Validate the format and reject non-numeric or out-of-range percentages."
+    }
+  ]
+}

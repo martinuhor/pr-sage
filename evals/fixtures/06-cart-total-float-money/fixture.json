@@ -1,0 +1,20 @@
+{
+  "title": "Compute cart totals and add the revenue report query",
+  "description": "Adds the shared cart-total helper used by checkout and the weekly revenue/active-customer query the finance dashboard renders.",
+  "expected": [
+    {
+      "path": "src/lib/cart.ts",
+      "line": 11,
+      "severity": "warning",
+      "category": "float-money",
+      "note": "Money is summed and discounted with binary floating-point numbers, so totals drift (e.g. 0.1 + 0.2 !== 0.3) and the displayed amount can disagree with what is charged. Work in integer cents (or a decimal type) and convert only for display."
+    },
+    {
+      "path": "db/queries/revenue.sql",
+      "line": 4,
+      "severity": "warning",
+      "category": "incorrect-aggregation",
+      "note": "`COUNT(user_id)` counts invoice rows, not distinct customers, so a user with several paid invoices is counted multiple times and `active_customers` is inflated. Use `COUNT(DISTINCT user_id)`."
+    }
+  ]
+}

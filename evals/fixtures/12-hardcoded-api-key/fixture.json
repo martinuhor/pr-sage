@@ -1,0 +1,20 @@
+{
+  "title": "Add shared Stripe client and application config",
+  "description": "Introduces a central config module with environment overrides and a small helper that builds the Stripe client the billing endpoints share.",
+  "expected": [
+    {
+      "path": "src/lib/config.ts",
+      "line": 7,
+      "severity": "critical",
+      "category": "hardcoded-secret",
+      "note": "A secret key literal is committed as the fallback value, so the key ships in source and in every checkout. The fallback must not contain a key at all; read it from the environment and fail loudly when it is missing."
+    },
+    {
+      "path": "src/lib/stripe-client.ts",
+      "line": 8,
+      "severity": "critical",
+      "category": "secret-logging",
+      "note": "The secret key is written to the logs on every client construction, leaking it to log aggregation and console history. Remove the log line or log only a non-sensitive identifier."
+    }
+  ]
+}

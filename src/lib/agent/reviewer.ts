@@ -36,14 +36,38 @@ export interface ReviewRequest {
   prNumber: number;
   installationId?: number;
   focusAreas?: string[];
+  /** Overrides the Gateway model id — used by the model-comparison eval. */
+  model?: string;
 }
+
+export const DEFAULT_MODEL = "anthropic/claude-sonnet-4-5";
+
+/**
+ * The GitHub calls the review agent needs, behind an interface so the eval
+ * harness can point the agent at local fixture PRs. The agent, its tools, the
+ * tool loop and the stream are all unchanged — only the data source differs,
+ * which is what makes an eval score mean anything about production behaviour.
+ */
+export type PrDataSource = {
+  getPullRequest: typeof getPullRequest;
+  getPRFiles: typeof getPRFiles;
+  getFileContent: typeof getFileContent;
+  postReviewComment: typeof postReviewComment;
+};
+
+export const githubPrDataSource: PrDataSource = {
+  getPullRequest,
+  getPRFiles,
+  getFileContent,
+  postReviewComment,
+};
 
 const MAX_FILES_DEFAULT = 50;
 const PATCH_CHAR_CAP = 4000;
 
 // --- Tool definitions ---
 
-function makePrTools(req: ReviewRequest) {
+function makePrTools(req: ReviewRequest, source: PrDataSource) {
   return {
     fetch_pr_files: tool({
       description:
@@ -56,7 +80,7 @@ function makePrTools(req: ReviewRequest) {
           .describe("Maximum number of files to return (default 50)"),
       }),
       execute: async ({ maxFiles }) => {
-        const files = await getPRFiles(req.owner, req.repo, req.prNumber, req.installationId);
+        const files = await source.getPRFiles(req.owner, req.repo, req.prNumber, req.installationId);
         metric("tool.fetch_pr_files", 1, { repo: req.repo });
 
         const shown = files.slice(0, maxFiles);
@@ -109,8 +133,8 @@ function makePrTools(req: ReviewRequest) {
           .describe("Number of lines to return (default 200, max 500)"),
       }),
       execute: async ({ path, offset, limit }) => {
-        const pr = await getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
-        const content = await getFileContent(
+        const pr = await source.getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
+        const content = await source.getFileContent(
           req.owner,
           req.repo,
           path,
@@ -141,9 +165,9 @@ function makePrTools(req: ReviewRequest) {
         "Posts the final review to GitHub as inline comments plus a summary body. Only call this ONCE at the end after all analysis is complete.",
       inputSchema: postReviewArgsSchema,
       execute: async ({ summary, comments }) => {
-        const pr = await getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
+        const pr = await source.getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
 
-        const reviewUrl = await postReviewComment(
+        const reviewUrl = await source.postReviewComment(
           req.owner,
           req.repo,
           req.prNumber,
@@ -170,9 +194,12 @@ function makePrTools(req: ReviewRequest) {
 
 // --- Primary review stream ---
 
-export async function streamPRReview(req: ReviewRequest) {
+export async function streamPRReview(
+  req: ReviewRequest,
+  source: PrDataSource = githubPrDataSource
+) {
   const startedAt = Date.now();
-  const pr = await getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
+  const pr = await source.getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
 
   const focusInstruction =
     req.focusAreas && req.focusAreas.length > 0
@@ -182,7 +209,7 @@ export async function streamPRReview(req: ReviewRequest) {
   const result = streamText({
     // Routes through Vercel AI Gateway — no API key needed in code.
     // On Vercel: authenticated via OIDC. Locally: AI_GATEWAY_API_KEY env var.
-    model: gateway("anthropic/claude-sonnet-4-5"),
+    model: gateway(req.model ?? DEFAULT_MODEL),
 
     system: `You are PR Sage, a senior software engineer performing thorough code reviews.
 Your goal: provide genuinely useful, specific, actionable feedback that helps engineers ship better code.
@@ -217,7 +244,7 @@ Stats: +${pr.additions} / -${pr.deletions} across ${pr.changed_files} files`,
       },
     ],
 
-    tools: makePrTools(req),
+    tools: makePrTools(req, source),
 
     // A review should not read differently on every run, and transient
     // provider/Gateway failures should be retried before the run dies.

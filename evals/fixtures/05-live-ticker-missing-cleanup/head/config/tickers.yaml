@@ -1,0 +1,8 @@
+# Symbols shown in the market overview, with their refresh interval.
+tickers:
+  - symbol: AAPL
+    refreshMs: 1000
+  - symbol: MSFT
+    refreshMs: 1000
+  - symbol: GOOG
+    refreshMs: 2000

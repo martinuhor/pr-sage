@@ -15,28 +15,13 @@
 import { NextRequest } from "next/server";
 import { createUIMessageStreamResponse, toUIMessageStream } from "ai";
 import { streamPRReview } from "@/lib/agent/reviewer";
+import { parseRepoInput } from "@/lib/github/parse-repo";
 import { metric } from "@vercel/functions";
 
 export const runtime = "nodejs"; // Stay on Node.js — Fluid Compute handles concurrency
 
 // Allow long-running reviews (Vercel Functions default is 300s on Fluid Compute)
 export const maxDuration = 300;
-
-/**
- * Accepts "repo", "owner/repo", or a full GitHub URL, so a link pasted into the
- * form still resolves to the right repository.
- */
-function parseRepoInput(inputOwner: string, inputRepo: string): { owner: string; repo: string } {
-  const cleaned = inputRepo.trim().replace(/\.git$/, "").replace(/\/+$/, "");
-
-  const url = cleaned.match(/github\.com[/:]([^/]+)\/([^/]+)$/i);
-  if (url) return { owner: url[1], repo: url[2] };
-
-  const pair = cleaned.match(/^([^/\s]+)\/([^/\s]+)$/);
-  if (pair) return { owner: pair[1], repo: pair[2] };
-
-  return { owner: inputOwner.trim(), repo: cleaned };
-}
 
 export async function POST(req: NextRequest) {
   const body = await req.json();

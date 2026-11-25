@@ -1,0 +1,13 @@
+{
+  "title": "Add cursor pagination to the users list",
+  "description": "Extracts the paging logic used by /api/users into a reusable helper. The cursor is the stringified offset of the next page; a null cursor starts from the beginning. The endpoint returns at most pageSize rows plus a cursor for the following page.",
+  "expected": [
+    {
+      "path": "src/paginate.ts",
+      "line": 12,
+      "severity": "critical",
+      "category": "off-by-one",
+      "note": "slice()'s end index is exclusive, so `offset + pageSize - 1` drops the last row of every page. The final row of the table is unreachable: the last page always comes back one item short and the loop paging through the table never yields it."
+    }
+  ]
+}

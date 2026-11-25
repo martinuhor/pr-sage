@@ -1,0 +1,20 @@
+{
+  "title": "Add an admin users endpoint and login redirect",
+  "description": "Adds the route the admin console uses to list accounts and a helper that sends users back to where they were headed after login.",
+  "expected": [
+    {
+      "path": "src/app/api/admin/users/route.ts",
+      "line": 11,
+      "severity": "critical",
+      "category": "missing-authz",
+      "note": "The handler only checks that a session exists and then lists every account; it never verifies the caller is an admin, so any logged-in user can read the full user table. Add an authorization check (session.role === \"admin\") before the query and return 403 otherwise."
+    },
+    {
+      "path": "src/app/api/admin/users/route.ts",
+      "line": 19,
+      "severity": "warning",
+      "category": "open-redirect",
+      "note": "The `next` query parameter is passed straight into new URL() as the redirect target, so ?next=https://evil.example sends users to an attacker's site. Validate that the target is a same-origin relative path before redirecting."
+    }
+  ]
+}

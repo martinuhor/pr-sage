@@ -1,0 +1,20 @@
+{
+  "title": "Add a live price ticker to the market view",
+  "description": "Streams the latest price for a symbol into the market view and adds a small helper that smooths the displayed series. Ticker symbols and refresh intervals come from the new market config.",
+  "expected": [
+    {
+      "path": "src/components/LiveTicker.tsx",
+      "line": 16,
+      "severity": "warning",
+      "category": "effect-cleanup",
+      "note": "The effect opens a price socket but never returns a cleanup function, so the stream is never closed. Every unmount and every `symbol` change leaves the old socket running, leaking subscriptions and stacking duplicate updates; return a cleanup that closes the socket."
+    },
+    {
+      "path": "src/lib/priceStats.ts",
+      "line": 6,
+      "severity": "warning",
+      "category": "incorrect-operator",
+      "note": "The reducer subtracts each price from the running total instead of adding it, so the moving average is computed from a wrong (often negative) sum. The accumulator should be `sum + price`."
+    }
+  ]
+}

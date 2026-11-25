@@ -46,16 +46,27 @@ function getAppCredentials(): { appId: string; privateKey: string } {
 }
 
 /**
+ * Overrides the GitHub API host. Set only by tests, which point Octokit at a
+ * local server so the App-JWT → installation-token exchange can be exercised
+ * without reaching real GitHub.
+ */
+function getApiBaseUrl(): string | undefined {
+  return process.env.GITHUB_API_BASE_URL;
+}
+
+/**
  * Finds the installation granting this App access to owner/repo.
  * Repository endpoints require an installation token, so callers that weren't
  * handed an installation ID (e.g. a review started from the web UI) need to
  * look it up with the App JWT first.
  */
-async function resolveInstallationId(owner: string, repo: string): Promise<number> {
+export async function resolveInstallationId(owner: string, repo: string): Promise<number> {
   const { appId, privateKey } = getAppCredentials();
+  const baseUrl = getApiBaseUrl();
   const appOctokit = new Octokit({
     authStrategy: createAppAuth,
     auth: { appId, privateKey },
+    ...(baseUrl ? { baseUrl } : {}),
   });
 
   const { data } = await appOctokit.request("GET /repos/{owner}/{repo}/installation", {
@@ -72,11 +83,13 @@ async function getOctokit(
   installationId?: number
 ): Promise<Octokit> {
   const { appId, privateKey } = getAppCredentials();
+  const baseUrl = getApiBaseUrl();
   const resolvedInstallationId = installationId ?? (await resolveInstallationId(owner, repo));
 
   return new Octokit({
     authStrategy: createAppAuth,
     auth: { appId, privateKey, installationId: resolvedInstallationId },
+    ...(baseUrl ? { baseUrl } : {}),
   });
 }
 
