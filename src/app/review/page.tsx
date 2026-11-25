@@ -22,7 +22,7 @@ function Hero() {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
         </span>
-        Powered by Vercel AI Gateway + AI SDK 7
+        Powered by AI SDK 7 · live tool loop
       </div>
 
       <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
@@ -31,8 +31,7 @@ function Hero() {
       </h1>
 
       <p className="text-zinc-400 max-w-md mx-auto text-balance">
-        Real-time AI code reviews using Claude via Vercel AI Gateway, streamed as the tool loop
-        runs.
+        Real-time AI code reviews, streamed as the tool loop runs.
       </p>
 
       <div className="flex items-center justify-center gap-6 text-xs text-zinc-500 pt-2">

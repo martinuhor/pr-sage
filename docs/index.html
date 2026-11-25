@@ -100,7 +100,7 @@
   <section id="how">
     <div class="sec-head">
       <h2>How it works</h2>
-      <span class="hint">GitHub App + Vercel AI Gateway</span>
+      <span class="hint">GitHub App + AI SDK 7</span>
     </div>
     <div class="steps">
       <div class="step">
@@ -111,7 +111,7 @@
       <div class="step">
         <div class="num">02</div>
         <h3>Agent starts</h3>
-        <p>The agent runs on <code>claude-sonnet-4-5</code>, routed through the Vercel AI Gateway — no API keys in code.</p>
+        <p>The agent resolves its provider at request time — the Vercel AI Gateway by default (<code>anthropic/claude-sonnet-4-5</code>), or Google AI Studio when <code>GOOGLE_GENERATIVE_AI_API_KEY</code> is set. No API keys in code.</p>
       </div>
       <div class="step">
         <div class="num">03</div>

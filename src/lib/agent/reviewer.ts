@@ -1,13 +1,15 @@
 /**
  * PR Sage review agent
  *
- * Runs a multi-step tool loop with the Vercel AI SDK's `streamText`, routed
- * through AI Gateway. Models are referenced as "provider/model" strings — no
- * API keys in code. The AI Gateway handles auth via OIDC on Vercel
- * deployments, or AI_GATEWAY_API_KEY locally.
+ * Runs a multi-step tool loop with the Vercel AI SDK's `streamText`. Which
+ * provider serves the model is an environment decision (see `resolveProvider`):
+ * the Vercel AI Gateway by default, or Google AI Studio directly when
+ * GOOGLE_GENERATIVE_AI_API_KEY is set. Nothing else differs — the tools, the
+ * loop, the metrics and the stream are provider-agnostic, which is the point of
+ * building on the AI SDK rather than a vendor SDK.
  *
  * The agent has three tools and nothing else:
- *   streamText (anthropic/claude-sonnet-4-5), stopWhen: isStepCount(10)
+ *   streamText (model from REVIEW_MODEL), stopWhen: isStepCount(10)
  *     ├─ tool: fetch_pr_files      → pulls the changed files and diffs
  *     ├─ tool: read_file_context   → pages through file content for context
  *     └─ tool: post_review         → posts the GitHub review, terminal step
@@ -23,8 +25,9 @@
  * themselves, so it cannot drift from what the agent actually did.
  */
 
-import { streamText, tool, isStepCount } from "ai";
+import { streamText, tool, isStepCount, type LanguageModel } from "ai";
 import { gateway } from "@ai-sdk/gateway";
+import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { getPullRequest, getPRFiles, postReviewComment, getFileContent } from "@/lib/github/client";
 import { postReviewArgsSchema } from "@/lib/agent/review-schema";
@@ -36,11 +39,60 @@ export interface ReviewRequest {
   prNumber: number;
   installationId?: number;
   focusAreas?: string[];
-  /** Overrides the Gateway model id — used by the model-comparison eval. */
+  /** Overrides the model id for the resolved provider — used by the model-comparison eval. */
   model?: string;
 }
 
 export const DEFAULT_MODEL = "anthropic/claude-sonnet-4-5";
+export const DEFAULT_GOOGLE_MODEL = "gemini-2.5-flash";
+
+/** Which provider mints the model. */
+export type ModelProvider = "gateway" | "google";
+
+/**
+ * Which provider serves the model.
+ *
+ * `gateway` needs no provider keys — it authenticates via OIDC on Vercel, or
+ * AI_GATEWAY_API_KEY locally — but it will not serve an account that has not
+ * completed billing verification.
+ *
+ * `google` talks to Google AI Studio directly with GOOGLE_GENERATIVE_AI_API_KEY,
+ * which has a free tier, so a deployment can run without a payment method.
+ * Providing that key is enough to switch providers; REVIEW_PROVIDER forces
+ * either side explicitly.
+ */
+export function resolveProvider(): ModelProvider {
+  const explicit = process.env.REVIEW_PROVIDER?.trim().toLowerCase();
+  if (explicit === "gateway" || explicit === "google") return explicit;
+  return process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "google" : "gateway";
+}
+
+/** The model id used when neither the caller nor REVIEW_MODEL names one. */
+export function defaultModelId(): string {
+  return resolveProvider() === "google" ? DEFAULT_GOOGLE_MODEL : DEFAULT_MODEL;
+}
+
+function resolveModel(reqModel?: string): {
+  model: LanguageModel;
+  provider: ModelProvider;
+  modelId: string;
+} {
+  const provider = resolveProvider();
+  // A Gateway id is "vendor/model"; a Google id is bare. Passing one to the
+  // other provider fails at the provider boundary, not here — so this does not
+  // try to guess which provider an id belongs to.
+  const modelId = reqModel ?? process.env.REVIEW_MODEL?.trim() ?? defaultModelId();
+  return {
+    model: provider === "google" ? google(modelId) : gateway(modelId),
+    provider,
+    modelId,
+  };
+}
+
+/** Recorded in the posted review body so a reader can tell what produced it. */
+function labelFor(provider: ModelProvider, modelId: string): string {
+  return provider === "google" ? `Google AI Studio · ${modelId}` : `Vercel AI Gateway · ${modelId}`;
+}
 
 /**
  * The GitHub calls the review agent needs, behind an interface so the eval
@@ -67,7 +119,7 @@ const PATCH_CHAR_CAP = 4000;
 
 // --- Tool definitions ---
 
-function makePrTools(req: ReviewRequest, source: PrDataSource) {
+function makePrTools(req: ReviewRequest, source: PrDataSource, agentLabel: string) {
   return {
     fetch_pr_files: tool({
       description:
@@ -177,7 +229,7 @@ function makePrTools(req: ReviewRequest, source: PrDataSource) {
             line: c.line,
             body: `**[${c.severity.toUpperCase()}] ${c.title}**\n\n${c.body}`,
           })),
-          `## 🧙 PR Sage Review\n\n${summary}\n\n---\n*Reviewed by PR Sage — powered by Vercel AI Gateway*`,
+          `## 🧙 PR Sage Review\n\n${summary}\n\n---\n*Reviewed by PR Sage — ${agentLabel}*`,
           req.installationId
         );
 
@@ -206,10 +258,11 @@ export async function streamPRReview(
       ? `\n\nThe reviewer has asked you to focus on: ${req.focusAreas.join(", ")}.`
       : "";
 
+  const { model, provider, modelId } = resolveModel(req.model);
+  const agentLabel = labelFor(provider, modelId);
+
   const result = streamText({
-    // Routes through Vercel AI Gateway — no API key needed in code.
-    // On Vercel: authenticated via OIDC. Locally: AI_GATEWAY_API_KEY env var.
-    model: gateway(req.model ?? DEFAULT_MODEL),
+    model,
 
     system: `You are PR Sage, a senior software engineer performing thorough code reviews.
 Your goal: provide genuinely useful, specific, actionable feedback that helps engineers ship better code.
@@ -244,7 +297,7 @@ Stats: +${pr.additions} / -${pr.deletions} across ${pr.changed_files} files`,
       },
     ],
 
-    tools: makePrTools(req, source),
+    tools: makePrTools(req, source, agentLabel),
 
     // A review should not read differently on every run, and transient
     // provider/Gateway failures should be retried before the run dies.

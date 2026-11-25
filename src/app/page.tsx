@@ -12,7 +12,7 @@ const features = [
     icon: Shield,
     title: "Multi-Provider AI Gateway",
     description:
-      "Routes to Claude via Vercel AI Gateway. No API keys in code — authenticated via OIDC on Vercel, or a single gateway key locally.",
+      "The provider is resolved at request time: Vercel AI Gateway by default, or Google AI Studio's free tier via GOOGLE_GENERATIVE_AI_API_KEY. No API keys in code — the Gateway authenticates via OIDC on Vercel.",
   },
   {
     icon: GitPullRequest,
@@ -31,7 +31,7 @@ const features = [
 const techStack = [
   { name: "Next.js 15", detail: "App Router" },
   { name: "AI SDK 7", detail: "streamText + tool loop" },
-  { name: "Vercel AI Gateway", detail: "Multi-provider, OIDC auth" },
+  { name: "AI Gateway / AI Studio", detail: "Provider resolved at runtime" },
   { name: "GitHub App", detail: "Webhook + HMAC verification" },
   { name: "Vercel Schedules", detail: "Nightly digest cron" },
   { name: "Zod", detail: "Typed tool schemas" },
@@ -85,7 +85,7 @@ export default function HomePage() {
 
           <p className="text-zinc-400 max-w-xl mx-auto text-lg text-balance">
             PR Sage is an AI agent that reviews your pull requests in real time — streaming
-            analysis, inline comments, and security checks using Claude via Vercel AI Gateway.
+            analysis, inline comments, and security checks as the tool loop runs.
           </p>
 
           <div className="flex items-center justify-center gap-3 pt-2">

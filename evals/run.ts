@@ -3,7 +3,7 @@
  *
  *   npm run eval -- --validate              # check fixtures + ground truth, no model calls
  *   npm run eval                            # score every fixture with the default model
- *   npm run eval -- --model=openai/gpt-5    # score with another Gateway model
+ *   npm run eval -- --model=openai/gpt-5    # score with another model from the same provider
  *   npm run eval -- --only=pagination,sql   # subset by fixture id
  *
  * Each fixture is a synthetic PR with planted bugs. The agent reviews it through
@@ -15,7 +15,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_MODEL, streamPRReview } from "../src/lib/agent/reviewer";
+import { defaultModelId, streamPRReview } from "../src/lib/agent/reviewer";
 import { postReviewArgsSchema } from "../src/lib/agent/review-schema";
 import {
   fixtureDataSource,
@@ -43,7 +43,7 @@ function flag(name: string): string | undefined {
 }
 
 const validateOnly = args.includes("--validate");
-const model = flag("model") ?? DEFAULT_MODEL;
+const model = flag("model") ?? process.env.REVIEW_MODEL?.trim() ?? defaultModelId();
 const tolerance = Number(flag("tolerance") ?? 2);
 const only = flag("only")
   ?.split(",")
@@ -185,10 +185,14 @@ async function main() {
     return;
   }
 
-  if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) {
+  if (
+    !process.env.AI_GATEWAY_API_KEY &&
+    !process.env.VERCEL_OIDC_TOKEN &&
+    !process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  ) {
     console.error(
-      "No AI Gateway credentials found. Set AI_GATEWAY_API_KEY in .env.local, " +
-        "or run `vercel env pull .env.local`."
+      "No model credentials found. Set AI_GATEWAY_API_KEY (or run `vercel env pull .env.local`) " +
+        "for the Gateway, or GOOGLE_GENERATIVE_AI_API_KEY for Google AI Studio's free tier."
     );
     process.exit(1);
   }
