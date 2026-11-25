@@ -4,10 +4,10 @@ export const config: VercelConfig = {
   buildCommand: "npm run build",
   framework: "nextjs",
   // Nightly review digest at 07:00 UTC every day
-  schedules: [
-    {
+  schedules: {
+    digest: {
+      schedule: "0 7 * * *",
       path: "/api/digest",
-      cron: "0 7 * * *",
     },
-  ],
+  },
 };

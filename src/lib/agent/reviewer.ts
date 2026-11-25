@@ -187,7 +187,7 @@ Stats: +${pr.additions} / -${pr.deletions} across ${pr.changed_files} files`,
     tools: makePrTools(req),
 
     stopWhen: isStepCount(10), // Allow up to 10 tool-call rounds
-    maxTokens: 8192,
+    maxOutputTokens: 8192,
 
     // Stream the output as a structured object so the UI can render
     // comments and summary separately as they arrive.

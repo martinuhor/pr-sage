@@ -3,13 +3,13 @@
 /**
  * ReviewChat component
  *
- * Uses the AI SDK's useChat hook to consume the streaming review response
+ * Uses the AI SDK's useObject hook to consume the streaming structured review
  * from /api/review. Renders live-updating review comments and summary
  * as the agent works through the PR.
  */
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { useObject } from "@ai-sdk/react";
 import { useState } from "react";
+import { z } from "zod";
 import { CommentCard } from "./CommentCard";
 import { StatusBadge } from "./StatusBadge";
 import { cn } from "@/lib/utils";
@@ -22,53 +22,48 @@ interface ReviewChatProps {
   prTitle: string;
 }
 
-interface ParsedReview {
-  status?: "analyzing" | "reviewing" | "posting" | "done";
-  progress?: string;
-  summary?: string;
-  comments?: Array<{
-    path: string;
-    line: number;
-    severity: "critical" | "warning" | "suggestion" | "praise";
-    title: string;
-    body: string;
-  }>;
-  reviewUrl?: string;
-}
+const commentSchema = z.object({
+  path: z.string(),
+  line: z.number(),
+  severity: z.enum(["critical", "warning", "suggestion", "praise"]),
+  title: z.string(),
+  body: z.string(),
+});
+
+// Mirrors the Output.object schema streamed by src/lib/agent/reviewer.ts.
+const reviewSchema = z.object({
+  status: z.enum(["analyzing", "reviewing", "posting", "done"]),
+  progress: z.string(),
+  summary: z.string().optional(),
+  comments: z.array(commentSchema).optional(),
+  reviewUrl: z.string().optional(),
+});
+
+type Comment = z.infer<typeof commentSchema>;
 
 export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) {
-  const [review, setReview] = useState<ParsedReview>({});
   const [started, setStarted] = useState(false);
 
-  const { messages, status, sendMessage, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/review" }),
-    onMessage: (message) => {
-      // Parse structured output from the agent as it streams
-      for (const part of message.parts) {
-        if (part.type === "text") {
-          try {
-            const parsed = JSON.parse(part.text) as ParsedReview;
-            setReview(parsed);
-          } catch {
-            // Partial JSON during streaming — ignore
-          }
-        }
-      }
-    },
+  const { object: review, submit, isLoading, error, clear } = useObject({
+    api: "/api/review",
+    schema: reviewSchema,
   });
 
-  const isStreaming = status === "streaming" || status === "submitted";
+  // Render a comment card only once every field has streamed in, so partial
+  // objects never produce half-empty cards.
+  const comments = (review?.comments ?? []).filter(
+    (c): c is Comment =>
+      Boolean(c?.path && c.line && c.severity && c.title && c.body)
+  );
 
   const handleStartReview = () => {
     setStarted(true);
-    setReview({});
-    sendMessage({
-      text: JSON.stringify({ owner, repo, prNumber }),
-    });
+    clear();
+    submit({ owner, repo, prNumber });
   };
 
-  const criticalCount = review.comments?.filter((c) => c.severity === "critical").length ?? 0;
-  const warningCount = review.comments?.filter((c) => c.severity === "warning").length ?? 0;
+  const criticalCount = comments.filter((c) => c.severity === "critical").length;
+  const warningCount = comments.filter((c) => c.severity === "warning").length;
 
   return (
     <div className="space-y-6">
@@ -104,19 +99,19 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
         <div className="space-y-4">
           {/* Progress */}
           <div className="flex items-center gap-3 text-sm">
-            {isStreaming && (
+            {isLoading && (
               <Loader2 className="w-4 h-4 text-violet-400 animate-spin shrink-0" />
             )}
-            {review.status && <StatusBadge status={review.status} />}
-            {review.progress && (
-              <span className={cn("text-zinc-400", isStreaming && "streaming-cursor")}>
+            {review?.status && <StatusBadge status={review.status} />}
+            {review?.progress && (
+              <span className={cn("text-zinc-400", isLoading && "streaming-cursor")}>
                 {review.progress}
               </span>
             )}
           </div>
 
           {/* Stats strip */}
-          {(review.comments?.length ?? 0) > 0 && (
+          {comments.length > 0 && (
             <div className="flex gap-3 text-xs font-medium">
               {criticalCount > 0 && (
                 <span className="px-2 py-1 rounded-md bg-red-950/50 text-red-400 border border-red-900">
@@ -129,13 +124,13 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
                 </span>
               )}
               <span className="px-2 py-1 rounded-md bg-zinc-800 text-zinc-400">
-                {review.comments?.length ?? 0} total
+                {comments.length} total
               </span>
             </div>
           )}
 
           {/* Summary */}
-          {review.summary && (
+          {review?.summary && (
             <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 space-y-2">
               <h3 className="text-sm font-semibold text-zinc-300">Summary</h3>
               <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">
@@ -145,17 +140,17 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
           )}
 
           {/* Inline comments */}
-          {(review.comments?.length ?? 0) > 0 && (
+          {comments.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-zinc-300">Inline Comments</h3>
-              {review.comments?.map((comment, i) => (
+              {comments.map((comment, i) => (
                 <CommentCard key={i} comment={comment} />
               ))}
             </div>
           )}
 
           {/* Review link */}
-          {review.reviewUrl && (
+          {review?.reviewUrl && (
             <a
               href={review.reviewUrl}
               target="_blank"
@@ -175,11 +170,11 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
           )}
 
           {/* Restart button once done */}
-          {review.status === "done" && (
+          {review?.status === "done" && (
             <button
               onClick={() => {
                 setStarted(false);
-                setReview({});
+                clear();
               }}
               className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-2"
             >

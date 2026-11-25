@@ -14,11 +14,13 @@ import { metric } from "@vercel/functions";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const webhooks = new Webhooks({
-  secret: process.env.GITHUB_WEBHOOK_SECRET ?? "",
-});
-
 export async function POST(req: NextRequest) {
+  // Constructed per-request so the build doesn't require GITHUB_WEBHOOK_SECRET,
+  // and so the secret is read at runtime rather than at module load.
+  const webhooks = new Webhooks({
+    secret: process.env.GITHUB_WEBHOOK_SECRET ?? "",
+  });
+
   const body = await req.text();
   const signature = req.headers.get("x-hub-signature-256") ?? "";
   const event = req.headers.get("x-github-event") ?? "";

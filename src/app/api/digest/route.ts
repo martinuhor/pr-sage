@@ -5,17 +5,18 @@
  * Runs at 07:00 UTC every day.
  *
  * In a real app, this would query your database for recent reviews
- * and send a Slack / email summary. For now it emits metrics and
- * returns a JSON summary.
+ * and send a Slack / email summary. For now it emits a metric and logs
+ * a summary.
  */
-import { NextRequest } from "next/server";
 import { handleSchedule } from "@vercel/schedules";
 import { metric } from "@vercel/functions";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-async function runDigest() {
+// handleSchedule verifies the Vercel schedule signature and returns 405 for
+// non-schedule requests in production, keeping the endpoint private.
+export const GET = handleSchedule(async () => {
   metric("digest.run", 1);
 
   // In production: query Vercel Blob / Postgres for all reviews in last 24h
@@ -25,11 +26,5 @@ async function runDigest() {
     message: "Nightly PR Sage digest — integrate your storage layer here.",
   };
 
-  return Response.json(summary);
-}
-
-export function GET(req: NextRequest) {
-  // handleSchedule verifies the Vercel cron signature and returns 405 for
-  // non-cron requests in production, keeping the endpoint private.
-  return handleSchedule(req, runDigest);
-}
+  console.log(summary.at, summary.message);
+});
