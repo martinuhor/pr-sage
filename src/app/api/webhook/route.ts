@@ -1,5 +1,5 @@
 /**
- * POST /api/webhook/github
+ * POST /api/webhook
  *
  * Receives GitHub App webhook events and triggers AI reviews automatically
  * when a PR is opened, reopened, or marked ready for review.

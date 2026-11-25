@@ -1,19 +1,22 @@
 /**
  * PR Sage review agent
  *
- * Uses the Vercel AI SDK's ToolLoopAgent with AI Gateway routing.
- * Models are referenced as "provider/model" strings — no API keys needed
- * in code. The AI Gateway handles auth via OIDC on Vercel deployments,
- * or AI_GATEWAY_API_KEY locally.
+ * Runs a multi-step tool loop with the Vercel AI SDK's `streamText`, routed
+ * through AI Gateway. Models are referenced as "provider/model" strings — no
+ * API keys in code. The AI Gateway handles auth via OIDC on Vercel
+ * deployments, or AI_GATEWAY_API_KEY locally.
  *
- * Architecture:
- *   ToolLoopAgent (primary: anthropic/claude-sonnet-4-5)
- *     ├─ tool: fetch_pr_files      → pulls diff from GitHub
- *     ├─ tool: read_file_context   → fetches surrounding file content
- *     ├─ tool: web_search          → looks up docs/library info
- *     └─ tool: post_review         → posts GitHub review comments
+ * The agent has three tools and nothing else:
+ *   streamText (anthropic/claude-sonnet-4-5), stopWhen: isStepCount(10)
+ *     ├─ tool: fetch_pr_files      → pulls the changed files and diffs
+ *     ├─ tool: read_file_context   → pages through file content for context
+ *     └─ tool: post_review         → posts the GitHub review, terminal step
  *
- *   Secondary model for security pass: google/gemini-2.5-pro-preview
+ * `post_review`'s arguments are the single source of truth for the review
+ * body and inline comments. They stream to the browser as UI message parts,
+ * so the UI renders findings from the same payload that gets posted to
+ * GitHub, rather than re-deriving a second copy from a structured output
+ * object that the model would have to reproduce independently.
  */
 
 import { streamText, tool, Output, isStepCount } from "ai";

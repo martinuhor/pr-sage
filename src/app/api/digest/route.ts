@@ -19,8 +19,9 @@ export const maxDuration = 60;
 export const GET = handleSchedule(async () => {
   metric("digest.run", 1);
 
-  // In production: query Vercel Blob / Postgres for all reviews in last 24h
-  // and send a Slack message via the slack channel tool.
+  // This endpoint is a stub: it emits a metric and a log line. Wiring it to a
+  // real digest means querying a review store for the last 24h and fanning out
+  // to a notification channel — neither of which is implemented yet.
   const summary = {
     at: new Date().toISOString(),
     message: "Nightly PR Sage digest — integrate your storage layer here.",

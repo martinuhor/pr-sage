@@ -6,7 +6,7 @@ const features = [
     icon: Zap,
     title: "Live Streaming Reviews",
     description:
-      "Powered by Vercel AI SDK 7's ToolLoopAgent with real-time streaming. Watch the agent think, fetch diffs, and reason through your code.",
+      "Powered by Vercel AI SDK 7's streamText with a multi-step tool loop. Watch the agent fetch diffs, page through file context, and reason through your code as it works.",
   },
   {
     icon: Shield,
@@ -29,12 +29,12 @@ const features = [
 ];
 
 const techStack = [
-  { name: "Next.js 15", detail: "App Router + PPR" },
-  { name: "AI SDK 7", detail: "ToolLoopAgent, streamText" },
+  { name: "Next.js 15", detail: "App Router" },
+  { name: "AI SDK 7", detail: "streamText + tool loop" },
   { name: "Vercel AI Gateway", detail: "Multi-provider, OIDC auth" },
-  { name: "eve", detail: "Durable agent sessions" },
+  { name: "GitHub App", detail: "Webhook + HMAC verification" },
   { name: "Vercel Schedules", detail: "Nightly digest cron" },
-  { name: "Vercel Blob", detail: "Review artifact storage" },
+  { name: "Zod", detail: "Typed tool schemas" },
   { name: "Fluid Compute", detail: "Long-running Node.js" },
   { name: "Custom Metrics", detail: "metric() observability" },
 ];
@@ -52,7 +52,7 @@ export default function HomePage() {
         </div>
         <div className="flex items-center gap-4 text-sm">
           <a
-            href="https://github.com"
+            href="https://github.com/martinuhor/pr-sage"
             target="_blank"
             rel="noopener noreferrer"
             className="text-zinc-400 hover:text-zinc-200 transition-colors"
@@ -96,7 +96,7 @@ export default function HomePage() {
               Start reviewing <ArrowRight className="w-4 h-4" />
             </Link>
             <a
-              href="https://github.com"
+              href="https://github.com/martinuhor/pr-sage"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-700 hover:border-zinc-600 text-zinc-300 font-semibold transition-colors"
             >
               View source

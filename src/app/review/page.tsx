@@ -1,9 +1,9 @@
 /**
  * PR Review page — /review
  *
- * Uses PPR (Partial Pre-Rendering) so the static shell is served instantly
- * from the CDN edge, while the dynamic review chat is streamed from
- * Fluid Compute. This is a great showcase of Next.js 15 + Vercel PPR.
+ * The hero is static, the review panel behind the Suspense boundary is the
+ * only dynamic part: PR params come from the query string, so without them
+ * the page renders just the form.
  */
 import { Suspense } from "react";
 import { ReviewChat } from "@/components/ReviewChat";
@@ -31,8 +31,8 @@ function Hero() {
       </h1>
 
       <p className="text-zinc-400 max-w-md mx-auto text-balance">
-        Real-time AI code reviews using Claude via Vercel AI Gateway, streamed live with the AI
-        SDK's ToolLoopAgent.
+        Real-time AI code reviews using Claude via Vercel AI Gateway, streamed as the tool loop
+        runs.
       </p>
 
       <div className="flex items-center justify-center gap-6 text-xs text-zinc-500 pt-2">
@@ -131,12 +131,12 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
   return (
     <main className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 pb-16">
-        {/* Static — served from edge cache instantly */}
+        {/* Static hero */}
         <Hero />
 
         <div className="space-y-6">
           {hasValidParams ? (
-            /* Dynamic — streamed from Fluid Compute via PPR */
+            /* The live review panel */
             <Suspense
               fallback={
                 <div className="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 text-center text-zinc-500 text-sm animate-pulse">
