@@ -197,12 +197,51 @@ that match nothing are counted as false positives, and near misses (right file, 
 reported separately — that distinction separates "never saw it" from "cited it loosely".
 
 Per-run output: `recall`, `precision`, `false-positive rate`, `severity accuracy`, token usage and
-wall clock, written to `evals/results/<timestamp>-<model>.json` so model runs can be compared.
+wall clock, written to `evals/results/<timestamp>-<model>.json`, so runs against different models can
+be diffed directly.
 
-**No scores are published here yet.** The harness is complete and the fixtures all validate
-(`npm run eval -- --validate` → `20 fixtures valid`), but scoring requires AI Gateway access, which
-needs a payment method on the account. A scored run is one command away; publishing invented numbers
-would defeat the point of having a harness.
+### Comparing models
+
+`--model` takes any AI Gateway model id, and everything else — fixtures, tools, scoring code,
+tolerance — stays fixed. That makes model choice a measurable decision instead of a preference:
+
+```bash
+npm run eval -- --model=anthropic/claude-sonnet-4-5    # default
+npm run eval -- --model=openai/gpt-5
+npm run eval -- --model=google/gemini-2.5-pro
+```
+
+The question this is built to answer is cost against recall: **how much review quality is actually
+given up by running a cheaper model**, expressed as recall per dollar of `review.input_tokens` +
+`review.output_tokens`. Precision carries equal weight, because a model that finds every planted bug
+while also flagging every construct it doesn't recognise is worse than no review at all — its
+comments get scrolled past, and real findings get ignored with them. `--min-recall` exists so a model
+run can be wired into CI as a gate rather than read by hand.
+
+### Why no scores are published yet
+
+The harness is complete and the fixtures validate — `npm run eval -- --validate` reports
+`20 fixtures valid`, exercising the loader, the patch generator, the ground-truth checks and the
+scoring code with zero model calls.
+
+Producing scores requires model calls, and model calls route through the Vercel AI Gateway, which
+will not serve an account that has not completed billing verification. On such an account every run
+fails identically, on the first model call:
+
+```
+403 customer_verification_required
+{"error":{"type":"customer_verification_required"}}
+```
+
+That is the Gateway declining to serve the request, not a fault in the harness: it is emitted at the
+provider boundary, after the fixtures have loaded and validated, before any tool has run. (The
+`onError` handler described [above](#stream-errors-are-surfaced-verbatim) is the reason the message
+is readable at all — the AI SDK's default would have collapsed it to `"An error occurred."`)
+
+Scoring is therefore one command away on an account with billing enabled, and unavailable on one
+without. The measurement apparatus is built and verified; the numbers it would produce are not
+available, and no scores are published here rather than manufactured, because a harness whose output
+is invented is not a harness.
 
 ## Tests
 
@@ -289,6 +328,9 @@ These are unimplemented, and the README says so rather than implying otherwise:
   merge-base, the base branch, or any other ref.
 - **No per-PR concurrency control.** Two events for the same PR could start two reviews.
 - **`--tolerance` is global.** The line-matching slack is the same for every fixture.
+- **The eval scores are unmeasured.** The harness runs and the fixtures validate, but no scored run
+  has been produced, because the AI Gateway requires billing verification before it will serve model
+  calls ([details](#why-no-scores-are-published-yet)).
 
 ## Tricky bugs, and why
 
