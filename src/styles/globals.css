@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Streaming cursor blink */
+  .streaming-cursor::after {
+    content: "▋";
+    animation: blink 1s step-end infinite;
+    @apply text-violet-400;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Diff view */
+  .diff-add {
+    @apply bg-emerald-950/60 border-l-2 border-emerald-500;
+  }
+  .diff-remove {
+    @apply bg-red-950/60 border-l-2 border-red-500;
+  }
+  .diff-context {
+    @apply text-zinc-500;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { @apply bg-zinc-900; }
+::-webkit-scrollbar-thumb { @apply bg-zinc-700 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-zinc-600; }
