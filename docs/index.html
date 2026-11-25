@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PR Sage — how it works</title>
+  <meta name="description" content="An interactive simulation of PR Sage: an AI agent that reviews GitHub pull requests in real time — webhook, tool calls, and inline comments on the diff." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧙</text></svg>" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+
+<nav class="top">
+  <div class="inner">
+    <a class="brand" href="#top">
+      <span class="logo">🧙</span>
+      <span>PR Sage</span>
+    </a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#how">How it works</a>
+      <a class="hide-sm" href="#video">Video</a>
+      <a class="hide-sm" href="https://github.com/martinuhor/pr-sage">GitHub</a>
+      <a class="btn primary" href="#demo">Try the demo</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap" id="top">
+
+  <!-- ------------------------------------------------------------ hero -->
+  <header class="hero">
+    <span class="pill"><span class="live"></span> Live-streaming AI code review</span>
+    <h1 class="title">Watch an agent review<br /><span class="grad">a pull request</span></h1>
+    <p class="sub">
+      PR Sage installs as a GitHub App, gets a webhook when a PR opens, and runs a
+      <code>ToolLoopAgent</code> that streams its reasoning and posts severity-tagged
+      comments straight onto the diff. Below is a real-time simulation of that flow.
+    </p>
+    <div class="actions">
+      <a class="btn primary" href="#demo">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Run the demo
+      </a>
+      <a class="btn" href="#video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
+        Watch the video
+      </a>
+    </div>
+  </header>
+
+  <!-- ------------------------------------------------------------ demo -->
+  <section id="demo">
+    <div class="sec-head">
+      <h2>The simulation</h2>
+      <span class="hint">webhook → agent tools → inline review</span>
+    </div>
+
+    <div class="demo-card">
+      <div class="stage-wrap">
+        <canvas id="stage" width="1280" height="720" aria-label="PR Sage review simulation"></canvas>
+      </div>
+
+      <div class="controls">
+        <button class="ctrl-btn play" id="playPause" title="Play / pause">
+          <svg viewBox="0 0 24 24" fill="currentColor"><g id="playIcon"><path d="M8 5v14l11-7z"/></g></svg>
+          <span id="playLabel">Pause</span>
+        </button>
+        <button class="ctrl-btn" id="replay" title="Replay">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <div class="scrub">
+          <input type="range" id="scrub" min="0" max="20" step="0.01" value="0" />
+          <span class="time" id="time">00.0s / 20.0s</span>
+        </div>
+        <select class="speed" id="speed" title="Playback speed">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+        </select>
+        <button class="ctrl-btn rec" id="record" title="Record the canvas to a .webm video">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+          <span id="recLabel">Export video</span>
+        </button>
+      </div>
+
+      <div class="stages" id="stages"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ how it works -->
+  <section id="how">
+    <div class="sec-head">
+      <h2>How it works</h2>
+      <span class="hint">GitHub App + Vercel AI Gateway</span>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">01</div>
+        <h3>Webhook fires</h3>
+        <p>Opening a PR posts a <code>pull_request</code> event to <code>/api/webhook/github</code>. The HMAC-SHA256 signature is verified, then the route returns <code>202 Accepted</code> and starts the review fire-and-forget.</p>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <h3>Agent starts</h3>
+        <p>A <code>ToolLoopAgent</code> runs on <code>claude-sonnet-4-5</code>, routed through the Vercel AI Gateway — no API keys in code.</p>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <h3>Tool loop</h3>
+        <p>The agent calls <code>fetch_pr_files</code> to read the diff, then <code>read_file_context</code> for surrounding code, up to 10 tool rounds.</p>
+      </div>
+      <div class="step">
+        <div class="num">04</div>
+        <h3>Inline review</h3>
+        <p><code>post_review</code> attaches <code>critical</code>, <code>warning</code>, <code>suggestion</code> and <code>praise</code> comments to exact lines, plus a summary body.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------------- video -->
+  <section id="video">
+    <div class="sec-head">
+      <h2>The video</h2>
+      <span class="hint">20s walkthrough · mp4</span>
+    </div>
+    <div class="video-wrap">
+      <video id="demoVideo" controls playsinline preload="metadata" poster="assets/poster.png">
+        <source src="demo.mp4" type="video/mp4" />
+        Your browser can’t play this video. It’s also available as
+        <a href="demo.mp4">demo.mp4</a>.
+      </video>
+    </div>
+    <p class="video-note">
+      Prefer your own copy? Hit <strong>Export video</strong> in the demo above to record the
+      canvas live to a <code>.webm</code> file in your browser.
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    Built with the Vercel AI platform · Next.js 15 · AI SDK 7 ·
+    <a href="https://github.com/martinuhor/pr-sage">source on GitHub</a>
+  </div>
+</footer>
+
+<script src="assets/animation.js"></script>
+<script src="assets/demo.js"></script>
+</body>
+</html>
