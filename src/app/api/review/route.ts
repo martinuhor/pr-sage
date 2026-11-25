@@ -20,9 +20,31 @@ export const runtime = "nodejs"; // Stay on Node.js — Fluid Compute handles co
 // Allow long-running reviews (Vercel Functions default is 300s on Fluid Compute)
 export const maxDuration = 300;
 
+/**
+ * Accepts "repo", "owner/repo", or a full GitHub URL, so a link pasted into the
+ * form still resolves to the right repository.
+ */
+function parseRepoInput(inputOwner: string, inputRepo: string): { owner: string; repo: string } {
+  const cleaned = inputRepo.trim().replace(/\.git$/, "").replace(/\/+$/, "");
+
+  const url = cleaned.match(/github\.com[/:]([^/]+)\/([^/]+)$/i);
+  if (url) return { owner: url[1], repo: url[2] };
+
+  const pair = cleaned.match(/^([^/\s]+)\/([^/\s]+)$/);
+  if (pair) return { owner: pair[1], repo: pair[2] };
+
+  return { owner: inputOwner.trim(), repo: cleaned };
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { owner, repo, prNumber, focusAreas, installationId } = body as {
+  const {
+    owner: rawOwner,
+    repo: rawRepo,
+    prNumber,
+    focusAreas,
+    installationId,
+  } = body as {
     owner: string;
     repo: string;
     prNumber: number;
@@ -30,12 +52,14 @@ export async function POST(req: NextRequest) {
     installationId?: number;
   };
 
-  if (!owner || !repo || !prNumber) {
+  if (!rawOwner || !rawRepo || !prNumber) {
     return new Response(JSON.stringify({ error: "owner, repo, and prNumber are required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  const { owner, repo } = parseRepoInput(rawOwner, rawRepo);
 
   metric("api.review.request", 1, { repo });
 

@@ -34,7 +34,7 @@ export interface PullRequest {
   mergeable: boolean | null;
 }
 
-function getOctokit(installationId?: number): Octokit {
+function getAppCredentials(): { appId: string; privateKey: string } {
   const appId = process.env.GITHUB_APP_ID;
   const privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
@@ -42,16 +42,41 @@ function getOctokit(installationId?: number): Octokit {
     throw new Error("GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY must be set");
   }
 
-  if (installationId) {
-    return new Octokit({
-      authStrategy: createAppAuth,
-      auth: { appId, privateKey, installationId },
-    });
-  }
+  return { appId, privateKey };
+}
+
+/**
+ * Finds the installation granting this App access to owner/repo.
+ * Repository endpoints require an installation token, so callers that weren't
+ * handed an installation ID (e.g. a review started from the web UI) need to
+ * look it up with the App JWT first.
+ */
+async function resolveInstallationId(owner: string, repo: string): Promise<number> {
+  const { appId, privateKey } = getAppCredentials();
+  const appOctokit = new Octokit({
+    authStrategy: createAppAuth,
+    auth: { appId, privateKey },
+  });
+
+  const { data } = await appOctokit.request("GET /repos/{owner}/{repo}/installation", {
+    owner,
+    repo,
+  });
+
+  return data.id;
+}
+
+async function getOctokit(
+  owner: string,
+  repo: string,
+  installationId?: number
+): Promise<Octokit> {
+  const { appId, privateKey } = getAppCredentials();
+  const resolvedInstallationId = installationId ?? (await resolveInstallationId(owner, repo));
 
   return new Octokit({
     authStrategy: createAppAuth,
-    auth: { appId, privateKey },
+    auth: { appId, privateKey, installationId: resolvedInstallationId },
   });
 }
 
@@ -61,7 +86,7 @@ export async function getPullRequest(
   prNumber: number,
   installationId?: number
 ): Promise<PullRequest> {
-  const octokit = getOctokit(installationId);
+  const octokit = await getOctokit(owner, repo, installationId);
   const { data } = await octokit.pulls.get({ owner, repo, pull_number: prNumber });
   return data as PullRequest;
 }
@@ -72,7 +97,7 @@ export async function getPRFiles(
   prNumber: number,
   installationId?: number
 ): Promise<PRFile[]> {
-  const octokit = getOctokit(installationId);
+  const octokit = await getOctokit(owner, repo, installationId);
   const files: PRFile[] = [];
   
   for await (const response of octokit.paginate.iterator(
@@ -94,7 +119,7 @@ export async function postReviewComment(
   reviewBody: string,
   installationId?: number
 ): Promise<string> {
-  const octokit = getOctokit(installationId);
+  const octokit = await getOctokit(owner, repo, installationId);
   
   const { data } = await octokit.pulls.createReview({
     owner,
@@ -121,7 +146,7 @@ export async function getFileContent(
   ref: string,
   installationId?: number
 ): Promise<string | null> {
-  const octokit = getOctokit(installationId);
+  const octokit = await getOctokit(owner, repo, installationId);
   
   try {
     const { data } = await octokit.repos.getContent({ owner, repo, path, ref });
