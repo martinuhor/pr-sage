@@ -25,8 +25,16 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get("x-hub-signature-256") ?? "";
   const event = req.headers.get("x-github-event") ?? "";
 
-  // Verify webhook signature
-  const isValid = await webhooks.verify(body, signature);
+  // Verify webhook signature. @octokit/webhooks throws (rather than returning
+  // false) when the signature header is missing or malformed, so treat any
+  // failure as an unauthorized request instead of letting the route 500.
+  let isValid = false;
+  try {
+    isValid = Boolean(signature) && (await webhooks.verify(body, signature));
+  } catch {
+    isValid = false;
+  }
+
   if (!isValid) {
     metric("webhook.invalid_signature", 1);
     return new Response("Unauthorized", { status: 401 });
