@@ -2,16 +2,18 @@
  * POST /api/review
  *
  * Starts a streaming AI review of a GitHub PR.
- * Streams the structured review as chunked JSON text, consumed by the
- * AI SDK's useObject hook on the client.
  *
- * Request body:
+ * Returns the agent's UI message stream (`toUIMessageStream`) — the protocol
+ * the AI SDK's `useChat` hook consumes. That stream carries the model's text,
+ * every tool call the agent makes, and each tool's result, so the client can
+ * render real progress and the final review without the server describing
+ * either one separately.
+ *
+ * Request body (extra fields are ignored):
  *   { owner, repo, prNumber, focusAreas? }
- *
- * Each chunk is a partial JSON object, so the client can render the
- * in-progress review state as the agent works.
  */
 import { NextRequest } from "next/server";
+import { createUIMessageStreamResponse, toUIMessageStream } from "ai";
 import { streamPRReview } from "@/lib/agent/reviewer";
 import { metric } from "@vercel/functions";
 
@@ -64,11 +66,18 @@ export async function POST(req: NextRequest) {
   metric("api.review.request", 1, { repo });
 
   try {
-    const reviewStream = await streamPRReview({ owner, repo, prNumber, focusAreas, installationId });
+    const result = await streamPRReview({ owner, repo, prNumber, focusAreas, installationId });
 
-    // toTextStreamResponse() streams the structured output as a chunked JSON
-    // text stream, which is the protocol useObject() on the client consumes.
-    return reviewStream.toTextStreamResponse();
+    const stream = toUIMessageStream({
+      stream: result.stream,
+      // The SDK masks stream errors as "An error occurred." by default, which
+      // leaves the client unable to tell a Gateway auth failure from a network
+      // blip. Surface the real reason — it is the difference between a user
+      // retrying and a user fixing their configuration.
+      onError: (error) => (error instanceof Error ? error.message : String(error)),
+    });
+
+    return createUIMessageStreamResponse({ stream });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     metric("api.review.error", 1, { repo, error: message.slice(0, 64) });

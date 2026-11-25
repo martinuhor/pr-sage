@@ -12,17 +12,22 @@
  *     ├─ tool: read_file_context   → pages through file content for context
  *     └─ tool: post_review         → posts the GitHub review, terminal step
  *
- * `post_review`'s arguments are the single source of truth for the review
- * body and inline comments. They stream to the browser as UI message parts,
- * so the UI renders findings from the same payload that gets posted to
- * GitHub, rather than re-deriving a second copy from a structured output
- * object that the model would have to reproduce independently.
+ * `post_review`'s arguments are the single source of truth for the review body
+ * and inline comments (see review-schema.ts). That tool call and its result
+ * stream to the browser as UI message parts, so the UI renders findings from
+ * the same payload that gets posted to GitHub — it is not a second copy that
+ * the model has to reproduce in a separate output object.
+ *
+ * The same is true of progress: there is no `status` field the model is asked
+ * to narrate. The UI derives its progress display from the tool calls
+ * themselves, so it cannot drift from what the agent actually did.
  */
 
-import { streamText, tool, Output, isStepCount } from "ai";
+import { streamText, tool, isStepCount } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
 import { getPullRequest, getPRFiles, postReviewComment, getFileContent } from "@/lib/github/client";
+import { postReviewArgsSchema } from "@/lib/agent/review-schema";
 import { metric } from "@vercel/functions";
 
 export interface ReviewRequest {
@@ -32,6 +37,9 @@ export interface ReviewRequest {
   installationId?: number;
   focusAreas?: string[];
 }
+
+const MAX_FILES_DEFAULT = 50;
+const PATCH_CHAR_CAP = 4000;
 
 // --- Tool definitions ---
 
@@ -44,33 +52,63 @@ function makePrTools(req: ReviewRequest) {
         maxFiles: z
           .number()
           .optional()
-          .default(50)
+          .default(MAX_FILES_DEFAULT)
           .describe("Maximum number of files to return (default 50)"),
       }),
       execute: async ({ maxFiles }) => {
         const files = await getPRFiles(req.owner, req.repo, req.prNumber, req.installationId);
         metric("tool.fetch_pr_files", 1, { repo: req.repo });
-        return {
-          files: files.slice(0, maxFiles).map((f) => ({
+
+        const shown = files.slice(0, maxFiles);
+        // Patches are truncated per file to stay inside the context budget.
+        // Report which files lost their tail so the model knows to page the
+        // full content with read_file_context instead of assuming the diff is
+        // complete.
+        const patchesTruncated: string[] = [];
+
+        const mapped = shown.map((f) => {
+          const patch = f.patch ?? "";
+          if (patch.length > PATCH_CHAR_CAP) patchesTruncated.push(f.filename);
+          return {
             filename: f.filename,
             status: f.status,
             additions: f.additions,
             deletions: f.deletions,
-            patch: f.patch?.slice(0, 4000), // cap patch size per file
-          })),
+            patch: patch.slice(0, PATCH_CHAR_CAP),
+          };
+        });
+
+        return {
+          files: mapped,
           total: files.length,
           truncated: files.length > maxFiles,
+          patchesTruncated,
         };
       },
     }),
 
     read_file_context: tool({
       description:
-        "Reads the full current content of a specific file from the PR head branch. Use this to understand context around a diff hunk.",
+        "Reads the current content of a file from the PR head branch, one page at a time. Use this to see the context around a diff hunk or to read past a truncated patch. Page with `offset` if the interesting code is further down.",
       inputSchema: z.object({
         path: z.string().describe("File path relative to repo root"),
+        offset: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .default(0)
+          .describe("0-based line to start from (default 0)"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(500)
+          .optional()
+          .default(200)
+          .describe("Number of lines to return (default 200, max 500)"),
       }),
-      execute: async ({ path }) => {
+      execute: async ({ path, offset, limit }) => {
         const pr = await getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
         const content = await getFileContent(
           req.owner,
@@ -80,13 +118,20 @@ function makePrTools(req: ReviewRequest) {
           req.installationId
         );
         metric("tool.read_file_context", 1, { repo: req.repo });
-        if (!content) return { error: "File not found or is binary" };
-        // Return at most 200 lines to stay within token budget
+
+        if (content === null) return { error: "File not found or is binary" };
+
         const lines = content.split("\n");
+        const start = Math.min(offset, lines.length);
+        const end = Math.min(start + limit, lines.length);
+
         return {
-          content: lines.slice(0, 200).join("\n"),
+          path,
+          content: lines.slice(start, end).join("\n"),
+          startLine: start + 1,
+          endLine: end,
           totalLines: lines.length,
-          truncated: lines.length > 200,
+          truncated: end < lines.length,
         };
       },
     }),
@@ -94,24 +139,7 @@ function makePrTools(req: ReviewRequest) {
     post_review: tool({
       description:
         "Posts the final review to GitHub as inline comments plus a summary body. Only call this ONCE at the end after all analysis is complete.",
-      inputSchema: z.object({
-        summary: z
-          .string()
-          .describe(
-            "Markdown summary of the review — mention strengths, concerns, and overall verdict."
-          ),
-        comments: z
-          .array(
-            z.object({
-              path: z.string(),
-              line: z.number().int().positive(),
-              severity: z.enum(["critical", "warning", "suggestion", "praise"]),
-              title: z.string(),
-              body: z.string().describe("Markdown body of the inline comment"),
-            })
-          )
-          .describe("Inline comments to attach to specific lines"),
-      }),
+      inputSchema: postReviewArgsSchema,
       execute: async ({ summary, comments }) => {
         const pr = await getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
 
@@ -143,6 +171,7 @@ function makePrTools(req: ReviewRequest) {
 // --- Primary review stream ---
 
 export async function streamPRReview(req: ReviewRequest) {
+  const startedAt = Date.now();
   const pr = await getPullRequest(req.owner, req.repo, req.prNumber, req.installationId);
 
   const focusInstruction =
@@ -160,7 +189,8 @@ Your goal: provide genuinely useful, specific, actionable feedback that helps en
 
 Review process:
 1. Call fetch_pr_files to understand what changed.
-2. For complex files, call read_file_context to see surrounding code.
+2. For complex files, call read_file_context to see surrounding code. It pages,
+   so ask for more lines with \`offset\` rather than guessing what comes next.
 3. Analyze for: correctness, security vulnerabilities, performance issues,
    type safety, error handling, accessibility, test coverage, and code style.
 4. When you have full context, call post_review ONCE with inline comments and summary.
@@ -189,37 +219,55 @@ Stats: +${pr.additions} / -${pr.deletions} across ${pr.changed_files} files`,
 
     tools: makePrTools(req),
 
+    // A review should not read differently on every run, and transient
+    // provider/Gateway failures should be retried before the run dies.
+    temperature: 0.2,
+    maxRetries: 2,
+
     stopWhen: isStepCount(10), // Allow up to 10 tool-call rounds
     maxOutputTokens: 8192,
 
-    // Stream the output as a structured object so the UI can render
-    // comments and summary separately as they arrive.
-    output: Output.object({
-      schema: z.object({
-        status: z.enum(["analyzing", "reviewing", "posting", "done"]),
-        progress: z.string().describe("One-line status message for the UI"),
-        summary: z.string().optional(),
-        comments: z
-          .array(
-            z.object({
-              path: z.string(),
-              line: z.number(),
-              severity: z.enum(["critical", "warning", "suggestion", "praise"]),
-              title: z.string(),
-              body: z.string(),
-            })
-          )
-          .optional(),
-        reviewUrl: z.string().optional(),
-      }),
-    }),
-
-    onStepFinish: ({ toolCalls, toolResults }) => {
-      // Emit metrics for each tool call
+    onStepEnd: ({ toolCalls, usage, stepNumber, performance }) => {
       for (const call of toolCalls ?? []) {
         metric(`agent.tool_call.${call.toolName}`, 1, { repo: req.repo });
       }
-      void toolResults; // suppress unused warning
+
+      metric("agent.step.input_tokens", usage.inputTokens ?? 0, {
+        repo: req.repo,
+        step: String(stepNumber),
+      });
+      metric("agent.step.output_tokens", usage.outputTokens ?? 0, {
+        repo: req.repo,
+        step: String(stepNumber),
+      });
+      metric("agent.step.duration_ms", performance.stepTimeMs, {
+        repo: req.repo,
+        step: String(stepNumber),
+      });
+    },
+
+    onEnd: ({ usage, stoppedBy }) => {
+      const durationMs = Date.now() - startedAt;
+
+      metric("review.input_tokens", usage.inputTokens ?? 0, { repo: req.repo });
+      metric("review.output_tokens", usage.outputTokens ?? 0, { repo: req.repo });
+      metric("review.duration_ms", durationMs, { repo: req.repo });
+
+      // Structured log so token spend and latency per review are recoverable
+      // from the function logs, not just from the aggregate metric.
+      console.log(
+        JSON.stringify({
+          event: "review.usage",
+          repo: `${req.owner}/${req.repo}`,
+          pr: pr.number,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          totalTokens: usage.totalTokens,
+          cachedInputTokens: usage.inputTokenDetails?.cacheReadTokens,
+          durationMs,
+          stoppedBy,
+        })
+      );
     },
   });
 

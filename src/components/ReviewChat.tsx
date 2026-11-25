@@ -1,19 +1,34 @@
 "use client";
 
 /**
- * ReviewChat component
+ * ReviewChat
  *
- * Uses the AI SDK's useObject hook to consume the streaming structured review
- * from /api/review. Renders live-updating review comments and summary
- * as the agent works through the PR.
+ * Consumes the agent's UI message stream from /api/review with `useChat`.
+ * Every value rendered here is derived from that stream:
+ *
+ *   - the activity log is built from the tool-call parts the agent emits, so
+ *     it shows what the agent actually did rather than a status string the
+ *     model was asked to narrate about itself
+ *   - the review (summary + inline comments) is read from the `post_review`
+ *     tool call's arguments — the same payload that was posted to GitHub,
+ *     validated with the same schema the server used
+ *   - the review URL is read from that tool call's result
  */
-import { useObject } from "@ai-sdk/react";
-import { useState } from "react";
-import { z } from "zod";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { useMemo, useState } from "react";
 import { CommentCard } from "./CommentCard";
 import { StatusBadge } from "./StatusBadge";
+import { postReviewArgsSchema } from "@/lib/agent/review-schema";
 import { cn } from "@/lib/utils";
-import { Loader2, GitPullRequest, Sparkles, ExternalLink } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ExternalLink,
+  GitPullRequest,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 
 interface ReviewChatProps {
   owner: string;
@@ -22,48 +37,160 @@ interface ReviewChatProps {
   prTitle: string;
 }
 
-const commentSchema = z.object({
-  path: z.string(),
-  line: z.number(),
-  severity: z.enum(["critical", "warning", "suggestion", "praise"]),
-  title: z.string(),
-  body: z.string(),
-});
+type Phase = "analyzing" | "reviewing" | "posting" | "done";
 
-// Mirrors the Output.object schema streamed by src/lib/agent/reviewer.ts.
-const reviewSchema = z.object({
-  status: z.enum(["analyzing", "reviewing", "posting", "done"]),
-  progress: z.string(),
-  summary: z.string().optional(),
-  comments: z.array(commentSchema).optional(),
-  reviewUrl: z.string().optional(),
-});
+/** A tool invocation pulled out of a message part. */
+interface ToolActivity {
+  name: string;
+  state: string;
+  input: unknown;
+  output: unknown;
+  errorText?: string;
+}
 
-type Comment = z.infer<typeof commentSchema>;
+type MessagePart = UIMessage["parts"][number];
+
+function readActivity(part: MessagePart): ToolActivity | null {
+  if (part.type === "dynamic-tool") {
+    const p = part as unknown as {
+      toolName?: string;
+      state?: string;
+      input?: unknown;
+      output?: unknown;
+      errorText?: string;
+    };
+    return {
+      name: p.toolName ?? "tool",
+      state: p.state ?? "unknown",
+      input: p.input,
+      output: p.output,
+      errorText: p.errorText,
+    };
+  }
+
+  if (part.type.startsWith("tool-")) {
+    // Static tool parts are keyed by name: `tool-fetch_pr_files`, etc.
+    const p = part as unknown as {
+      type: string;
+      state?: string;
+      input?: unknown;
+      output?: unknown;
+      errorText?: string;
+    };
+    return {
+      name: p.type.slice("tool-".length),
+      state: p.state ?? "unknown",
+      input: p.input,
+      output: p.output,
+      errorText: p.errorText,
+    };
+  }
+
+  return null;
+}
+
+function isSettled(state: string) {
+  return state === "output-available" || state === "output-error";
+}
+
+function describeActivity(a: ToolActivity): string {
+  if (a.name === "fetch_pr_files") {
+    const out = a.output as { total?: number } | undefined;
+    if (a.state === "output-available" && typeof out?.total === "number") {
+      return `Fetched ${out.total} changed file${out.total === 1 ? "" : "s"}`;
+    }
+    return "Fetching changed files";
+  }
+
+  if (a.name === "read_file_context") {
+    const input = a.input as { path?: string } | undefined;
+    const out = a.output as { startLine?: number; endLine?: number } | undefined;
+    const path = input?.path ?? "file";
+    if (a.state === "output-available" && out?.startLine && out?.endLine) {
+      return `Read ${path} (lines ${out.startLine}–${out.endLine})`;
+    }
+    return `Reading ${path}`;
+  }
+
+  if (a.name === "post_review") {
+    if (a.state === "output-available") return "Posted review to GitHub";
+    if (a.state === "output-error") return "Failed to post the review";
+    return "Composing review";
+  }
+
+  return a.name;
+}
 
 export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) {
   const [started, setStarted] = useState(false);
 
-  const { object: review, submit, isLoading, error, clear } = useObject({
-    api: "/api/review",
-    schema: reviewSchema,
-  });
-
-  // Render a comment card only once every field has streamed in, so partial
-  // objects never produce half-empty cards.
-  const comments = (review?.comments ?? []).filter(
-    (c): c is Comment =>
-      Boolean(c?.path && c.line && c.severity && c.title && c.body)
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api: "/api/review", body: { owner, repo, prNumber } }),
+    [owner, repo, prNumber]
   );
 
-  const handleStartReview = () => {
-    setStarted(true);
-    clear();
-    submit({ owner, repo, prNumber });
-  };
+  const { messages, sendMessage, status, error, setMessages, clearError } = useChat({ transport });
+
+  const isStreaming = status === "submitted" || status === "streaming";
+
+  const activities = useMemo(
+    () =>
+      messages
+        .filter((m) => m.role === "assistant")
+        .flatMap((m) => m.parts.map(readActivity))
+        .filter((a): a is ToolActivity => a !== null),
+    [messages]
+  );
+
+  // The post_review call *is* the review. Its arguments are parsed with the
+  // same schema the server validated before posting to GitHub, so the cards on
+  // screen describe exactly what landed in the PR.
+  const reviewActivity = useMemo(
+    () => [...activities].reverse().find((a) => a.name === "post_review"),
+    [activities]
+  );
+
+  const parsedReview = useMemo(() => {
+    if (!reviewActivity || reviewActivity.state === "input-streaming") return null;
+    const parsed = postReviewArgsSchema.safeParse(reviewActivity.input);
+    return parsed.success ? parsed.data : null;
+  }, [reviewActivity]);
+
+  const comments = parsedReview?.comments ?? [];
+
+  const reviewUrl = useMemo(() => {
+    const out = reviewActivity?.output;
+    if (out && typeof out === "object" && "reviewUrl" in out) {
+      return String((out as { reviewUrl: unknown }).reviewUrl);
+    }
+    return undefined;
+  }, [reviewActivity]);
+
+  const phase: Phase = useMemo(() => {
+    if (reviewActivity) {
+      return reviewActivity.state === "output-available" ? "done" : "posting";
+    }
+    return activities.some((a) => a.name === "read_file_context") ? "reviewing" : "analyzing";
+  }, [activities, reviewActivity]);
 
   const criticalCount = comments.filter((c) => c.severity === "critical").length;
   const warningCount = comments.filter((c) => c.severity === "warning").length;
+
+  const latest = activities[activities.length - 1];
+  const reviewFailed = reviewActivity?.state === "output-error";
+
+  const handleStartReview = () => {
+    setStarted(true);
+    clearError();
+    setMessages([]);
+    void sendMessage({ text: `Review PR #${prNumber} in ${owner}/${repo}` });
+  };
+
+  const handleReset = () => {
+    setStarted(false);
+    clearError();
+    setMessages([]);
+  };
 
   return (
     <div className="space-y-6">
@@ -94,21 +221,36 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
         </button>
       )}
 
-      {/* Live status */}
       {started && (
         <div className="space-y-4">
-          {/* Progress */}
+          {/* Live status */}
           <div className="flex items-center gap-3 text-sm">
-            {isLoading && (
-              <Loader2 className="w-4 h-4 text-violet-400 animate-spin shrink-0" />
-            )}
-            {review?.status && <StatusBadge status={review.status} />}
-            {review?.progress && (
-              <span className={cn("text-zinc-400", isLoading && "streaming-cursor")}>
-                {review.progress}
-              </span>
+            {isStreaming && <Loader2 className="w-4 h-4 text-violet-400 animate-spin shrink-0" />}
+            <StatusBadge status={phase} />
+            {isStreaming && latest && (
+              <span className="text-zinc-400 truncate">{describeActivity(latest)}</span>
             )}
           </div>
+
+          {/* Activity log — one line per tool call the agent actually made */}
+          {activities.length > 0 && (
+            <ol className="space-y-1.5 text-xs">
+              {activities.map((activity, i) => (
+                <li key={i} className="flex items-center gap-2 text-zinc-500">
+                  {activity.state === "output-error" ? (
+                    <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                  ) : isSettled(activity.state) ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/80 shrink-0" />
+                  ) : (
+                    <Loader2 className="w-3.5 h-3.5 text-violet-400 animate-spin shrink-0" />
+                  )}
+                  <span className={cn("font-mono", isSettled(activity.state) && "text-zinc-600")}>
+                    {describeActivity(activity)}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
 
           {/* Stats strip */}
           {comments.length > 0 && (
@@ -130,11 +272,11 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
           )}
 
           {/* Summary */}
-          {review?.summary && (
+          {parsedReview?.summary && (
             <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 space-y-2">
               <h3 className="text-sm font-semibold text-zinc-300">Summary</h3>
               <p className="text-sm text-zinc-400 leading-relaxed whitespace-pre-wrap">
-                {review.summary}
+                {parsedReview.summary}
               </p>
             </div>
           )}
@@ -150,9 +292,9 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
           )}
 
           {/* Review link */}
-          {review?.reviewUrl && (
+          {reviewUrl && (
             <a
-              href={review.reviewUrl}
+              href={reviewUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors"
@@ -162,31 +304,39 @@ export function ReviewChat({ owner, repo, prNumber, prTitle }: ReviewChatProps) 
             </a>
           )}
 
-          {/* Error */}
+          {/* Stream error — surfaced verbatim by the route's onError handler */}
           {error && (
-            <div className="p-4 rounded-xl border border-red-900 bg-red-950/30 text-red-400 text-sm">
-              Error: {error.message}
+            <div className="p-4 rounded-xl border border-red-900 bg-red-950/30 text-red-400 text-sm space-y-1">
+              <p className="font-medium">The review failed</p>
+              <p className="text-red-300/80 break-words">{error.message}</p>
             </div>
           )}
 
-          {/* The stream can end without a single JSON chunk if the model call
-              fails mid-stream (e.g. a Gateway error after the response has
-              already started). Without this the panel renders as an empty
-              void, since every other branch is gated on `review`. */}
-          {!isLoading && !review && !error && (
+          {/* post_review itself failed — the model's tool call was rejected or
+              the GitHub API rejected it. */}
+          {reviewFailed && !error && (
+            <div className="p-4 rounded-xl border border-red-900 bg-red-950/30 text-red-400 text-sm space-y-1">
+              <p className="font-medium">The review could not be posted to GitHub</p>
+              <p className="text-red-300/80 break-words">
+                {reviewActivity?.errorText ?? "No error detail was returned."}
+              </p>
+            </div>
+          )}
+
+          {/* The stream can end without a review if the model never calls
+              post_review (for example it hit the step limit). Without this the
+              panel would look like it simply stopped. */}
+          {!isStreaming && !parsedReview && !error && !reviewFailed && (
             <div className="p-4 rounded-xl border border-amber-900 bg-amber-950/20 text-amber-400 text-sm">
-              The review returned no output. That usually means the model call failed — check the
-              function logs for a Gateway or provider error.
+              The agent finished without posting a review. That usually means it ran out of tool
+              steps before reaching <span className="font-mono">post_review</span>.
             </div>
           )}
 
-          {/* Restart button once done */}
-          {review?.status === "done" && (
+          {/* Reset once the run is over */}
+          {!isStreaming && (
             <button
-              onClick={() => {
-                setStarted(false);
-                clear();
-              }}
+              onClick={handleReset}
               className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-2"
             >
               Run another review

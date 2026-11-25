@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       });
 
       // Drain the stream to completion (posts GitHub review at the end via tool)
-      for await (const _ of reviewStream.fullStream) { void _; }
+      for await (const _ of reviewStream.stream) { void _; }
 
       metric("webhook.review_complete", 1, { repo: repository.full_name });
     } catch (err) {
