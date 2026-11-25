@@ -9,6 +9,12 @@ App authentication and HMAC-verified webhooks.
 
 **[Live app](https://pr-sage-blush.vercel.app)** · **[Project page](https://martinuhor.github.io/pr-sage/)** · `/review?owner=<owner>&repo=<repo>&pr=<number>`
 
+> **Before you try the live app:** starting a review calls the model, and the Vercel AI Gateway will
+> not serve an account that has not completed billing verification. On the account this deployment
+> runs on, `Start AI Review` therefore returns `403 customer_verification_required` rather than a
+> review. Everything else runs without it — the tests, the fixture validation, and the recorded demo
+> on the project page. See [why no scores are published yet](#why-no-scores-are-published-yet).
+
 ---
 
 ## What it does
