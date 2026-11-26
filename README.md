@@ -7,7 +7,7 @@ progress to a browser in real time.
 Built on the Vercel AI SDK 7 and the Vercel AI Gateway (no provider API keys in code), with GitHub
 App authentication and HMAC-verified webhooks.
 
-**[Live app](https://pr-sage-blush.vercel.app)** · **[Project page](https://martinuhor.github.io/pr-sage/)** · `/review?owner=<owner>&repo=<repo>&pr=<number>`
+**[Live app](https://pr-sage-blush.vercel.app)** · **[Project page](https://martinuhor.github.io/pr-sage/)** 
 
 > **Before you try the live app:** starting a review calls the model, and the Vercel AI Gateway will
 > not serve an account that has not completed billing verification. On the account this deployment
