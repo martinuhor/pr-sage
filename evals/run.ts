@@ -5,6 +5,7 @@
  *   npm run eval                            # score every fixture with the default model
  *   npm run eval -- --model=openai/gpt-5    # score with another model from the same provider
  *   npm run eval -- --only=pagination,sql   # subset by fixture id
+ *   npm run eval -- --delay=20000           # pause between fixtures (free-tier rate limits)
  *
  * Each fixture is a synthetic PR with planted bugs. The agent reviews it through
  * the same `streamPRReview` path production uses, with only the GitHub data
@@ -50,6 +51,11 @@ const only = flag("only")
   .map((needle) => needle.trim())
   .filter(Boolean);
 const minRecall = flag("min-recall") === undefined ? undefined : Number(flag("min-recall"));
+// A free-tier provider (Google AI Studio) enforces a per-minute request limit,
+// so scoring a full corpus in one burst fails fixtures with 429s that say
+// nothing about review quality. A delay between fixtures keeps the run under
+// that limit; it defaults to 0, where the provider has no such cap.
+const delayMs = Number(flag("delay") ?? 0);
 
 /** Ids are filtered before loading, so a fixture being written elsewhere can't break a subset run. */
 function selectFixtures(): Fixture[] {
@@ -210,7 +216,9 @@ async function main() {
   let outputTokens = 0;
   const startedAt = Date.now();
 
-  for (const { fixture } of preflight) {
+  for (const [index, { fixture }] of preflight.entries()) {
+    if (index > 0 && delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+
     let run: Awaited<ReturnType<typeof runFixture>>;
     try {
       run = await runFixture(fixture);

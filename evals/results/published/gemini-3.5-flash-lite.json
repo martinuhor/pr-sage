@@ -1,0 +1,760 @@
+{
+  "model": "gemini-3.5-flash-lite",
+  "tolerance": 2,
+  "fixtures": 20,
+  "durationMs": 646178,
+  "inputTokens": 129961,
+  "outputTokens": 14486,
+  "totals": {
+    "truePositives": 29,
+    "falsePositives": 14,
+    "falseNegatives": 7,
+    "comments": 43,
+    "recall": 0.8055555555555556,
+    "precision": 0.6744186046511628,
+    "f1": 0.7341772151898734,
+    "falsePositiveRate": 0.32558139534883723,
+    "severityAccuracy": 0.5517241379310345
+  },
+  "results": [
+    {
+      "id": "01-off-by-one-pagination",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/paginate.ts:12",
+          "cited": "src/paginate.ts:12",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "off-by-one"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [
+        "src/paginate.ts:13 [warning] Next offset calculation should reflect actual page length",
+        "src/paginate.ts:11 [warning] Handle NaN when parsing cursor string"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 8237,
+      "usage": {
+        "inputTokens": 5539,
+        "inputTokenDetails": {
+          "noCacheTokens": 5539,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 809,
+        "outputTokenDetails": {
+          "textTokens": 809,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 6348
+      }
+    },
+    {
+      "id": "02-batch-chunk-window",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/chunk.js:8",
+          "cited": "src/lib/chunk.js:8",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "off-by-one"
+        },
+        {
+          "expected": "src/lib/chunk.js:18",
+          "cited": "src/lib/chunk.js:18",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "infinite-loop"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 7698,
+      "usage": {
+        "inputTokens": 5237,
+        "inputTokenDetails": {
+          "noCacheTokens": 5237,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 572,
+        "outputTokenDetails": {
+          "textTokens": 572,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5809
+      }
+    },
+    {
+      "id": "03-account-greeting-null-deref",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/user.ts:14",
+          "cited": "src/lib/user.ts:13",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "null-deref"
+        },
+        {
+          "expected": "src/lib/avatar.ts:11",
+          "cited": "src/lib/avatar.ts:10",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "missing-return"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6703,
+      "usage": {
+        "inputTokens": 7050,
+        "inputTokenDetails": {
+          "noCacheTokens": 7050,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 729,
+        "outputTokenDetails": {
+          "textTokens": 729,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 7779
+      }
+    },
+    {
+      "id": "04-debounced-search-stale-closure",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/components/SearchBox.tsx:19",
+          "cited": "src/components/SearchBox.tsx:19",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "stale-closure"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6434,
+      "usage": {
+        "inputTokens": 5215,
+        "inputTokenDetails": {
+          "noCacheTokens": 5215,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 465,
+        "outputTokenDetails": {
+          "textTokens": 465,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5680
+      }
+    },
+    {
+      "id": "05-live-ticker-missing-cleanup",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/lib/priceStats.ts:6",
+          "cited": "src/lib/priceStats.ts:4",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "incorrect-operator"
+        }
+      ],
+      "missed": [
+        "src/components/LiveTicker.tsx:16 (effect-cleanup)"
+      ],
+      "falsePositives": [
+        "src/components/LiveTicker.tsx:13 [critical] Missing WebSocket/Stream cleanup in useEffect"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 5728,
+      "usage": {
+        "inputTokens": 7796,
+        "inputTokenDetails": {
+          "noCacheTokens": 7796,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 638,
+        "outputTokenDetails": {
+          "textTokens": 638,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8434
+      }
+    },
+    {
+      "id": "06-cart-total-float-money",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/cart.ts:11",
+          "cited": "src/lib/cart.ts:10",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "float-money"
+        },
+        {
+          "expected": "db/queries/revenue.sql:4",
+          "cited": "db/queries/revenue.sql:4",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "incorrect-aggregation"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6575,
+      "usage": {
+        "inputTokens": 7281,
+        "inputTokenDetails": {
+          "noCacheTokens": 7281,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 778,
+        "outputTokenDetails": {
+          "textTokens": 778,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8059
+      }
+    },
+    {
+      "id": "07-order-id-loose-equality",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/validation.js:7",
+          "cited": "src/lib/validation.js:7",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "loose-equality"
+        },
+        {
+          "expected": "src/lib/promo.js:6",
+          "cited": "src/lib/promo.js:4",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "missing-validation"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 9103,
+      "usage": {
+        "inputTokens": 6814,
+        "inputTokenDetails": {
+          "noCacheTokens": 6814,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 1000,
+        "outputTokenDetails": {
+          "textTokens": 1000,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 7814
+      }
+    },
+    {
+      "id": "08-attachment-path-traversal",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/lib/download.ts:10",
+          "cited": "src/lib/download.ts:9",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "path-traversal"
+        }
+      ],
+      "missed": [
+        "src/lib/checksum.ts:9 (missing-return)"
+      ],
+      "falsePositives": [
+        "src/lib/checksum.ts:6 [critical] Missing return statement in sha256 function"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6519,
+      "usage": {
+        "inputTokens": 7097,
+        "inputTokenDetails": {
+          "noCacheTokens": 7097,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 720,
+        "outputTokenDetails": {
+          "textTokens": 720,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 7817
+      }
+    },
+    {
+      "id": "09-ship-order-floating-promise",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/jobs/audit.js:9",
+          "cited": "src/jobs/audit.js:9",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "floating-promise"
+        },
+        {
+          "expected": "src/jobs/events.js:10",
+          "cited": "src/jobs/events.js:9",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "unchecked-response"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [
+        "src/jobs/events.js:17 [suggestion] Unchecked response in recordEvent"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 7053,
+      "usage": {
+        "inputTokens": 7567,
+        "inputTokenDetails": {
+          "noCacheTokens": 7567,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 754,
+        "outputTokenDetails": {
+          "textTokens": 754,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8321
+      }
+    },
+    {
+      "id": "10-csv-export-handle-leak",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "services/reports/export.py:8",
+          "cited": "services/reports/export.py:7",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "resource-leak"
+        },
+        {
+          "expected": "services/reports/export.py:15",
+          "cited": "services/reports/export.py:15",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "mutable-default-argument"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6924,
+      "usage": {
+        "inputTokens": 5329,
+        "inputTokenDetails": {
+          "noCacheTokens": 5329,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 663,
+        "outputTokenDetails": {
+          "textTokens": 663,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5992
+      }
+    },
+    {
+      "id": "11-xss-comment-renderer",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/components/CommentRenderer.tsx:17",
+          "cited": "src/components/CommentRenderer.tsx:16",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "xss"
+        },
+        {
+          "expected": "src/components/CommentList.tsx:15",
+          "cited": "src/components/CommentList.tsx:15",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "reverse-tabnabbing"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 8354,
+      "usage": {
+        "inputTokens": 7844,
+        "inputTokenDetails": {
+          "noCacheTokens": 7844,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 756,
+        "outputTokenDetails": {
+          "textTokens": 756,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8600
+      }
+    },
+    {
+      "id": "12-hardcoded-api-key",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/config.ts:7",
+          "cited": "src/lib/config.ts:7",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "hardcoded-secret"
+        },
+        {
+          "expected": "src/lib/stripe-client.ts:8",
+          "cited": "src/lib/stripe-client.ts:8",
+          "severity": "warning",
+          "expectedSeverity": "critical",
+          "category": "secret-logging"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 9859,
+      "usage": {
+        "inputTokens": 3736,
+        "inputTokenDetails": {
+          "noCacheTokens": 3736,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 512,
+        "outputTokenDetails": {
+          "textTokens": 512,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 4248
+      }
+    },
+    {
+      "id": "13-weak-session-token",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/session.ts:12",
+          "cited": "src/lib/session.ts:12",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "weak-randomness"
+        },
+        {
+          "expected": "src/lib/session.ts:24",
+          "cited": "src/lib/session.ts:23",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "untrusted-json-parse"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [
+        "src/lib/session.ts:22 [warning] Unsigned / Unencrypted Session Data in Cookie"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 14828,
+      "usage": {
+        "inputTokens": 5393,
+        "inputTokenDetails": {
+          "noCacheTokens": 5393,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 551,
+        "outputTokenDetails": {
+          "textTokens": 551,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5944
+      }
+    },
+    {
+      "id": "14-swallowed-exception-sync",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "services/payment/repository.py:9",
+          "cited": "services/payment/repository.py:7",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "sql-injection"
+        }
+      ],
+      "missed": [
+        "services/payment/sync.py:13 (swallowed-exception)"
+      ],
+      "falsePositives": [
+        "services/payment/sync.py:9 [critical] Swallowed exceptions and misleading success return value"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6701,
+      "usage": {
+        "inputTokens": 7844,
+        "inputTokenDetails": {
+          "noCacheTokens": 7844,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 1015,
+        "outputTokenDetails": {
+          "textTokens": 1015,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8859
+      }
+    },
+    {
+      "id": "15-wallet-race-condition",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/services/wallet.ts:28",
+          "cited": "src/services/wallet.ts:27",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "missing-await"
+        }
+      ],
+      "missed": [
+        "src/services/wallet.ts:16 (race-condition)"
+      ],
+      "falsePositives": [
+        "src/services/wallet.ts:11 [critical] Concurrent credit race condition (lost updates)",
+        "src/services/wallet.ts:27 [warning] No balance validation in debitWallet"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 5225,
+      "usage": {
+        "inputTokens": 5918,
+        "inputTokenDetails": {
+          "noCacheTokens": 5918,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 836,
+        "outputTokenDetails": {
+          "textTokens": 836,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 6754
+      }
+    },
+    {
+      "id": "16-n-plus-one-orders",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/repositories/orderRepo.ts:14",
+          "cited": "src/repositories/orderRepo.ts:13",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "unbounded-query"
+        },
+        {
+          "expected": "src/repositories/adminRepo.ts:15",
+          "cited": "src/repositories/adminRepo.ts:14",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "sensitive-data-exposure"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6197,
+      "usage": {
+        "inputTokens": 7933,
+        "inputTokenDetails": {
+          "noCacheTokens": 7933,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 860,
+        "outputTokenDetails": {
+          "textTokens": 860,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8793
+      }
+    },
+    {
+      "id": "17-leaderboard-sort",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/utils/leaderboard.ts:11",
+          "cited": "src/utils/leaderboard.ts:10",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "wrong-comparator"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [
+        "src/api/leaderboard.ts:8 [warning] Missing weekly date/time filtering in SQL query"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 15541,
+      "usage": {
+        "inputTokens": 5397,
+        "inputTokenDetails": {
+          "noCacheTokens": 5397,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 612,
+        "outputTokenDetails": {
+          "textTokens": 612,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 6009
+      }
+    },
+    {
+      "id": "18-timezone-daily-rollover",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/jobs/dailyReport.ts:8",
+          "cited": "src/jobs/dailyReport.ts:6",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "timezone"
+        },
+        {
+          "expected": "src/api/reports.ts:9",
+          "cited": "src/api/reports.ts:9",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "error-leak"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [
+        "src/api/reports.ts:5 [warning] Potential bug: Database query result structure"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 22737,
+      "usage": {
+        "inputTokens": 8015,
+        "inputTokenDetails": {
+          "noCacheTokens": 8015,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 675,
+        "outputTokenDetails": {
+          "textTokens": 675,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8690
+      }
+    },
+    {
+      "id": "19-config-prototype-pollution",
+      "recall": 0,
+      "matched": [],
+      "missed": [
+        "src/lib/deepMerge.ts:14 (prototype-pollution)"
+      ],
+      "falsePositives": [
+        "src/lib/deepMerge.ts:8 [critical] Prototype pollution and shared state mutation vulnerability"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6128,
+      "usage": {
+        "inputTokens": 7404,
+        "inputTokenDetails": {
+          "noCacheTokens": 7404,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 763,
+        "outputTokenDetails": {
+          "textTokens": 763,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8167
+      }
+    },
+    {
+      "id": "20-admin-endpoint-missing-authz",
+      "recall": 0,
+      "matched": [],
+      "missed": [
+        "src/app/api/admin/users/route.ts:11 (missing-authz)",
+        "src/app/api/admin/users/route.ts:19 (open-redirect)"
+      ],
+      "falsePositives": [
+        "src/app/api/admin/users/route.ts:5 [critical] Missing Admin Authorization Check on Admin API Endpoint",
+        "src/app/api/admin/users/route.ts:16 [critical] Potential Open Redirect Vulnerability in `loginRedirect`"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 4600,
+      "usage": {
+        "inputTokens": 5552,
+        "inputTokenDetails": {
+          "noCacheTokens": 5552,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 778,
+        "outputTokenDetails": {
+          "textTokens": 778,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 6330
+      }
+    }
+  ]
+}
