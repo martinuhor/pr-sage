@@ -4,16 +4,11 @@
 to read, and posts a severity-tagged review — as inline comments on the diff — while streaming its
 progress to a browser in real time.
 
-Built on the Vercel AI SDK 7 and the Vercel AI Gateway (no provider API keys in code), with GitHub
-App authentication and HMAC-verified webhooks.
+Built on the Vercel AI SDK 7 and **provider-agnostic**: it runs on Google AI Studio's free tier or
+the Vercel AI Gateway, chosen by environment (see [Choosing a provider](#choosing-a-provider)).
+GitHub App authentication and HMAC-verified webhooks.
 
-**[Live app](https://pr-sage-blush.vercel.app)** · **[Project page](https://martinuhor.github.io/pr-sage/)** · `/review?owner=<owner>&repo=<repo>&pr=<number>`
-
-> **Before you try the live app:** starting a review calls the model, and the Vercel AI Gateway will
-> not serve an account that has not completed billing verification. On the account this deployment
-> runs on, `Start AI Review` therefore returns `403 customer_verification_required` rather than a
-> review. Everything else runs without it — the tests, the fixture validation, and the recorded demo
-> on the project page. See [why no scores are published yet](#why-no-scores-are-published-yet).
+**[Live app](https://pr-sage-blush.vercel.app)** · **[Project page](https://martinuhor.github.io/pr-sage/)**
 
 ---
 
@@ -59,7 +54,23 @@ see [Known gaps](#known-gaps).
 
 One review path exists. `/api/webhook` and `/api/review` differ only in how the request arrives and
 whether the stream is drained server-side or forwarded to a browser; both call
-[`streamPRReview`](file:///Users/mac/Desktop/vercel%20project/pr-sage/src/lib/agent/reviewer.ts#L197-L303).
+[`streamPRReview`](file:///Users/mac/Desktop/vercel%20project/pr-sage/src/lib/agent/reviewer.ts#L253-L361).
+
+## Choosing a provider
+
+The agent resolves its provider at request time, so the same build runs with or without a payment
+method ([`resolveProvider`](file:///Users/mac/Desktop/vercel%20project/pr-sage/src/lib/agent/reviewer.ts#L68-L72)):
+
+| Provider | Selected when | Credentials |
+|---|---|---|
+| **Google AI Studio** | `GOOGLE_GENERATIVE_AI_API_KEY` is set | a free-tier key from [aistudio.google.com](https://aistudio.google.com/apikey) |
+| **Vercel AI Gateway** | otherwise | OIDC on Vercel, or `AI_GATEWAY_API_KEY` locally |
+
+`REVIEW_PROVIDER=gateway\|google` forces either side; `REVIEW_MODEL` overrides the model id. Gateway
+ids are `vendor/model` (`anthropic/claude-sonnet-4-5`); Google ids are bare
+(`gemini-3.5-flash-lite`). Only the model object differs — the tools, the loop, the metrics and the
+stream are provider-agnostic, which is the point of building on the AI SDK rather than a vendor SDK.
+The posted review body records which provider and model produced it.
 
 ## Design decisions
 
@@ -156,10 +167,14 @@ pr-sage/
 │   ├── run.ts                             # Eval harness CLI
 │   ├── lib/fixtures.ts                    # Fixture loading + patch generation + validation
 │   ├── lib/scoring.ts                     # Recall / precision / F1 / severity scoring
-│   └── fixtures/01..20/                   # 20 synthetic PRs with planted bugs
+│   ├── fixtures/01..20/                   # 20 synthetic PRs with planted bugs
+│   └── results/published/                 # Curated scored run cited in the README
 ├── tests/
 │   ├── webhook.test.ts                    # Signature verification and event routing
 │   └── github-client.test.ts              # App JWT → installation token exchange
+├── .github/workflows/
+│   ├── ci.yml                             # Lint, typecheck, test, fixture validation, build
+│   └── pages.yml                          # Deploys docs/ to GitHub Pages
 ├── docs/                                  # Static project page (GitHub Pages)
 ├── scripts/render-demo-video.mjs          # Renders docs/demo.mp4 from the page
 ├── vercel.ts                              # Typed Vercel config + the digest schedule
@@ -190,10 +205,11 @@ by fixture files (`fixtureDataSource`). Same tools, same loop, same `streamText`
 
 ```bash
 npm run eval -- --validate                  # check fixtures + ground truth; makes zero model calls
-npm run eval                                # score every fixture with the default model
-npm run eval -- --model=openai/gpt-5        # score with a different Gateway model
+npm run eval                                # score every fixture with the resolved provider's default model
+npm run eval -- --model=gemini-3.5-flash-lite   # score with another model of the same provider
 npm run eval -- --only=pagination,xss       # subset by fixture id substring
 npm run eval -- --tolerance=3               # lines of slack when matching a comment to a bug (default 2)
+npm run eval -- --delay=25000               # pause between fixtures; keeps a free tier under its per-minute cap
 npm run eval -- --min-recall=0.7            # exit non-zero if recall falls below the bar
 ```
 
@@ -206,15 +222,47 @@ Per-run output: `recall`, `precision`, `false-positive rate`, `severity accuracy
 wall clock, written to `evals/results/<timestamp>-<model>.json`, so runs against different models can
 be diffed directly.
 
+### Scored results
+
+The numbers below are a real run — `gemini-3.5-flash-lite` on Google AI Studio's free tier, all 20
+fixtures, line tolerance ±2. The raw per-fixture record is checked in at
+[`evals/results/published/gemini-3.5-flash-lite.json`](evals/results/published/gemini-3.5-flash-lite.json);
+`--validate` reports `20 fixtures valid` on the same corpus with zero model calls.
+
+| Metric | Value | |
+|---|---|---|
+| Recall | **81%** | 29 of 36 planted bugs found |
+| Precision | **67%** | 29 of 43 comments were real |
+| F1 | **73%** | |
+| False-positive rate | **33%** | 14 spurious comments |
+| Severity accuracy | **55%** | on matched comments |
+| Token usage | 129,961 in / 14,486 out | |
+| Wall clock | 646s | throttled to stay inside the free tier's 15 req/min |
+
+Two things this run establishes beyond the headline numbers:
+
+- **The single-source-of-truth property holds.** Every one of the 20 fixtures reported
+  `consistency: ok` — the payload streamed to the browser and the payload posted to GitHub were
+  byte-identical, asserted rather than assumed. Zero fixtures failed to produce a valid `post_review`
+  call.
+- **The ceiling is the model, not the harness.** On a small, cheap model the misses cluster in
+  *severity calibration* (55%) and near-miss line citations rather than in finding bugs at all — the
+  per-fixture record lists each `nearMiss` with the line delta. That is exactly the signal
+  `--model` exists to measure: run the same corpus against a stronger model and diff the two files.
+
+Recall-per-dollar is the intended framing, and it is deliberately not computed here: the free tier
+has no per-token price, so a dollar figure would be invented. On a metered provider the token counts
+above are what the division needs.
+
 ### Comparing models
 
-`--model` takes any AI Gateway model id, and everything else — fixtures, tools, scoring code,
-tolerance — stays fixed. That makes model choice a measurable decision instead of a preference:
+`--model` takes a model id for the resolved provider, and everything else — fixtures, tools, scoring
+code, tolerance — stays fixed. That makes model choice a measurable decision instead of a preference:
 
 ```bash
-npm run eval -- --model=anthropic/claude-sonnet-4-5    # default
-npm run eval -- --model=openai/gpt-5
-npm run eval -- --model=google/gemini-2.5-pro
+npm run eval -- --model=gemini-3.5-flash-lite          # Google AI Studio (free tier)
+npm run eval -- --model=anthropic/claude-sonnet-4-5    # Vercel AI Gateway (needs billing verification)
+npm run eval -- --model=openai/gpt-5                   # Vercel AI Gateway
 ```
 
 The question this is built to answer is cost against recall: **how much review quality is actually
@@ -223,31 +271,6 @@ given up by running a cheaper model**, expressed as recall per dollar of `review
 while also flagging every construct it doesn't recognise is worse than no review at all — its
 comments get scrolled past, and real findings get ignored with them. `--min-recall` exists so a model
 run can be wired into CI as a gate rather than read by hand.
-
-### Why no scores are published yet
-
-The harness is complete and the fixtures validate — `npm run eval -- --validate` reports
-`20 fixtures valid`, exercising the loader, the patch generator, the ground-truth checks and the
-scoring code with zero model calls.
-
-Producing scores requires model calls, and model calls route through the Vercel AI Gateway, which
-will not serve an account that has not completed billing verification. On such an account every run
-fails identically, on the first model call:
-
-```
-403 customer_verification_required
-{"error":{"type":"customer_verification_required"}}
-```
-
-That is the Gateway declining to serve the request, not a fault in the harness: it is emitted at the
-provider boundary, after the fixtures have loaded and validated, before any tool has run. (The
-`onError` handler described [above](#stream-errors-are-surfaced-verbatim) is the reason the message
-is readable at all — the AI SDK's default would have collapsed it to `"An error occurred."`)
-
-Scoring is therefore one command away on an account with billing enabled, and unavailable on one
-without. The measurement apparatus is built and verified; the numbers it would produce are not
-available, and no scores are published here rather than manufactured, because a harness whose output
-is invented is not a harness.
 
 ## Tests
 
@@ -299,11 +322,17 @@ npm run dev
 
 | Variable | Required | Notes |
 |---|---|---|
-| `AI_GATEWAY_API_KEY` | Locally | Injected automatically via OIDC on Vercel |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | One provider | Google AI Studio free-tier key; its presence switches the agent to Google |
+| `AI_GATEWAY_API_KEY` | One provider | Vercel AI Gateway; injected automatically via OIDC on Vercel |
+| `REVIEW_PROVIDER` | No | `gateway` or `google` — forces a provider instead of inferring it |
+| `REVIEW_MODEL` | No | Model id for the resolved provider |
 | `GITHUB_APP_ID` | Yes | From your GitHub App |
 | `GITHUB_APP_PRIVATE_KEY` | Yes | PEM contents; `\n` escapes are unescaped at read time |
 | `GITHUB_WEBHOOK_SECRET` | For webhooks | Must match the App's webhook secret |
 | `GITHUB_API_BASE_URL` | Tests only | Points Octokit at a local server |
+
+Set exactly one of the two provider credentials. With only
+`GOOGLE_GENERATIVE_AI_API_KEY` (no payment method anywhere), the agent runs on the free tier.
 
 Then open `http://localhost:3000/review?owner=<owner>&repo=<repo>&pr=<number>` and press
 **Start AI Review**. The run streams its tool calls and renders the review from the `post_review`
@@ -313,13 +342,14 @@ payload as it arrives.
 
 ```bash
 vercel link
-vercel env pull .env.local
+vercel env add GOOGLE_GENERATIVE_AI_API_KEY production   # or AI_GATEWAY_API_KEY
 vercel deploy --prod
 ```
 
 Set the GitHub App's webhook URL to `https://<your-deployment>/api/webhook` and subscribe to
 `pull_request` events. The static project page in `docs/` is deployed separately by
-`.github/workflows/pages.yml`.
+`.github/workflows/pages.yml`, and `.github/workflows/ci.yml` runs lint, typecheck, tests, fixture
+validation and a build on every push and pull request to `main`.
 
 ## Known gaps
 
@@ -334,9 +364,10 @@ These are unimplemented, and the README says so rather than implying otherwise:
   merge-base, the base branch, or any other ref.
 - **No per-PR concurrency control.** Two events for the same PR could start two reviews.
 - **`--tolerance` is global.** The line-matching slack is the same for every fixture.
-- **The eval scores are unmeasured.** The harness runs and the fixtures validate, but no scored run
-  has been produced, because the AI Gateway requires billing verification before it will serve model
-  calls ([details](#why-no-scores-are-published-yet)).
+- **One scored run, one model.** The published run is `gemini-3.5-flash-lite` on the free tier. There
+  is no second scored run to diff against yet, so the model-comparison framing is demonstrated rather
+  than populated — and recall-per-dollar is absent, because the free tier has no per-token price to
+  divide by.
 
 ## Tricky bugs, and why
 
@@ -382,4 +413,4 @@ instead; and `tsx` compiles to CJS here, which rejects top-level `await`
 
 ---
 
-*Built with the [Vercel AI SDK](https://sdk.vercel.ai) · [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) · [Next.js](https://nextjs.org)*
+*Built with the [Vercel AI SDK](https://sdk.vercel.ai) · [Google AI Studio](https://aistudio.google.com) · [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) · [Next.js](https://nextjs.org)*
