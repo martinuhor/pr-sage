@@ -1,0 +1,750 @@
+{
+  "model": "gemini-3.1-flash-lite",
+  "tolerance": 2,
+  "fixtures": 20,
+  "durationMs": 3103192,
+  "inputTokens": 112391,
+  "outputTokens": 9654,
+  "totals": {
+    "truePositives": 29,
+    "falsePositives": 8,
+    "falseNegatives": 7,
+    "comments": 37,
+    "recall": 0.8055555555555556,
+    "precision": 0.7837837837837838,
+    "f1": 0.7945205479452055,
+    "falsePositiveRate": 0.21621621621621623,
+    "severityAccuracy": 0.5517241379310345
+  },
+  "results": [
+    {
+      "id": "01-off-by-one-pagination",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/paginate.ts:12",
+          "cited": "src/paginate.ts:12",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "off-by-one"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 9810,
+      "usage": {
+        "inputTokens": 4993,
+        "inputTokenDetails": {
+          "noCacheTokens": 4993,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 289,
+        "outputTokenDetails": {
+          "textTokens": 289,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5282
+      }
+    },
+    {
+      "id": "02-batch-chunk-window",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/chunk.js:8",
+          "cited": "src/lib/chunk.js:8",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "off-by-one"
+        },
+        {
+          "expected": "src/lib/chunk.js:18",
+          "cited": "src/lib/chunk.js:19",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "infinite-loop"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 51795,
+      "usage": {
+        "inputTokens": 4970,
+        "inputTokenDetails": {
+          "noCacheTokens": 4970,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 409,
+        "outputTokenDetails": {
+          "textTokens": 409,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5379
+      }
+    },
+    {
+      "id": "03-account-greeting-null-deref",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/lib/user.ts:14",
+          "cited": "src/lib/user.ts:14",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "null-deref"
+        }
+      ],
+      "missed": [
+        "src/lib/avatar.ts:11 (missing-return)"
+      ],
+      "falsePositives": [
+        "src/lib/avatar.ts:14 [critical] Missing return value / Incomplete implementation"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 23463,
+      "usage": {
+        "inputTokens": 6776,
+        "inputTokenDetails": {
+          "noCacheTokens": 6776,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 549,
+        "outputTokenDetails": {
+          "textTokens": 549,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 7325
+      }
+    },
+    {
+      "id": "04-debounced-search-stale-closure",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/components/SearchBox.tsx:19",
+          "cited": "src/components/SearchBox.tsx:19",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "stale-closure"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 7124,
+      "usage": {
+        "inputTokens": 5036,
+        "inputTokenDetails": {
+          "noCacheTokens": 5036,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 334,
+        "outputTokenDetails": {
+          "textTokens": 334,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5370
+      }
+    },
+    {
+      "id": "05-live-ticker-missing-cleanup",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/components/LiveTicker.tsx:16",
+          "cited": "src/components/LiveTicker.tsx:14",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "effect-cleanup"
+        },
+        {
+          "expected": "src/lib/priceStats.ts:6",
+          "cited": "src/lib/priceStats.ts:6",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "incorrect-operator"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 13726,
+      "usage": {
+        "inputTokens": 7457,
+        "inputTokenDetails": {
+          "noCacheTokens": 7457,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 388,
+        "outputTokenDetails": {
+          "textTokens": 388,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 7845
+      }
+    },
+    {
+      "id": "06-cart-total-float-money",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/cart.ts:11",
+          "cited": "src/lib/cart.ts:11",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "float-money"
+        },
+        {
+          "expected": "db/queries/revenue.sql:4",
+          "cited": "db/queries/revenue.sql:5",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "incorrect-aggregation"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 13766,
+      "usage": {
+        "inputTokens": 3562,
+        "inputTokenDetails": {
+          "noCacheTokens": 3562,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 395,
+        "outputTokenDetails": {
+          "textTokens": 395,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 3957
+      }
+    },
+    {
+      "id": "07-order-id-loose-equality",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/validation.js:7",
+          "cited": "src/lib/validation.js:6",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "loose-equality"
+        },
+        {
+          "expected": "src/lib/promo.js:6",
+          "cited": "src/lib/promo.js:4",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "missing-validation"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 532456,
+      "usage": {
+        "inputTokens": 6285,
+        "inputTokenDetails": {
+          "noCacheTokens": 6285,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 665,
+        "outputTokenDetails": {
+          "textTokens": 665,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 6950
+      }
+    },
+    {
+      "id": "08-attachment-path-traversal",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/download.ts:10",
+          "cited": "src/lib/download.ts:11",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "path-traversal"
+        },
+        {
+          "expected": "src/lib/checksum.ts:9",
+          "cited": "src/lib/checksum.ts:10",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "missing-return"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 9196,
+      "usage": {
+        "inputTokens": 6737,
+        "inputTokenDetails": {
+          "noCacheTokens": 6737,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 576,
+        "outputTokenDetails": {
+          "textTokens": 576,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 7313
+      }
+    },
+    {
+      "id": "09-ship-order-floating-promise",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/jobs/audit.js:9",
+          "cited": "src/jobs/audit.js:9",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "floating-promise"
+        }
+      ],
+      "missed": [
+        "src/jobs/events.js:10 (unchecked-response)"
+      ],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 10851,
+      "usage": {
+        "inputTokens": 5183,
+        "inputTokenDetails": {
+          "noCacheTokens": 5183,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 306,
+        "outputTokenDetails": {
+          "textTokens": 306,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5489
+      }
+    },
+    {
+      "id": "10-csv-export-handle-leak",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "services/reports/export.py:8",
+          "cited": "services/reports/export.py:8",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "resource-leak"
+        },
+        {
+          "expected": "services/reports/export.py:15",
+          "cited": "services/reports/export.py:16",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "mutable-default-argument"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 8811,
+      "usage": {
+        "inputTokens": 5082,
+        "inputTokenDetails": {
+          "noCacheTokens": 5082,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 490,
+        "outputTokenDetails": {
+          "textTokens": 490,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5572
+      }
+    },
+    {
+      "id": "11-xss-comment-renderer",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/components/CommentRenderer.tsx:17",
+          "cited": "src/components/CommentRenderer.tsx:17",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "xss"
+        }
+      ],
+      "missed": [
+        "src/components/CommentList.tsx:15 (reverse-tabnabbing)"
+      ],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 41777,
+      "usage": {
+        "inputTokens": 5471,
+        "inputTokenDetails": {
+          "noCacheTokens": 5471,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 388,
+        "outputTokenDetails": {
+          "textTokens": 388,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5859
+      }
+    },
+    {
+      "id": "12-hardcoded-api-key",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/config.ts:7",
+          "cited": "src/lib/config.ts:7",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "hardcoded-secret"
+        },
+        {
+          "expected": "src/lib/stripe-client.ts:8",
+          "cited": "src/lib/stripe-client.ts:9",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "secret-logging"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 31508,
+      "usage": {
+        "inputTokens": 3609,
+        "inputTokenDetails": {
+          "noCacheTokens": 3609,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 398,
+        "outputTokenDetails": {
+          "textTokens": 398,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 4007
+      }
+    },
+    {
+      "id": "13-weak-session-token",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/lib/session.ts:12",
+          "cited": "src/lib/session.ts:12",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "weak-randomness"
+        },
+        {
+          "expected": "src/lib/session.ts:24",
+          "cited": "src/lib/session.ts:24",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "untrusted-json-parse"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 9308,
+      "usage": {
+        "inputTokens": 5234,
+        "inputTokenDetails": {
+          "noCacheTokens": 5234,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 673,
+        "outputTokenDetails": {
+          "textTokens": 673,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5907
+      }
+    },
+    {
+      "id": "14-swallowed-exception-sync",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "services/payment/sync.py:13",
+          "cited": "services/payment/sync.py:13",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "swallowed-exception"
+        },
+        {
+          "expected": "services/payment/repository.py:9",
+          "cited": "services/payment/repository.py:7",
+          "severity": "critical",
+          "expectedSeverity": "critical",
+          "category": "sql-injection"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 9847,
+      "usage": {
+        "inputTokens": 7308,
+        "inputTokenDetails": {
+          "noCacheTokens": 7308,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 656,
+        "outputTokenDetails": {
+          "textTokens": 656,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 7964
+      }
+    },
+    {
+      "id": "15-wallet-race-condition",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/services/wallet.ts:28",
+          "cited": "src/services/wallet.ts:29",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "missing-await"
+        }
+      ],
+      "missed": [
+        "src/services/wallet.ts:16 (race-condition)"
+      ],
+      "falsePositives": [
+        "src/services/wallet.ts:11 [critical] Race condition in creditWallet",
+        "src/services/wallet.ts:29 [warning] Missing balance validation"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 5261,
+      "usage": {
+        "inputTokens": 5542,
+        "inputTokenDetails": {
+          "noCacheTokens": 5542,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 470,
+        "outputTokenDetails": {
+          "textTokens": 470,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 6012
+      }
+    },
+    {
+      "id": "16-n-plus-one-orders",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/repositories/orderRepo.ts:14",
+          "cited": "src/repositories/orderRepo.ts:13",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "unbounded-query"
+        }
+      ],
+      "missed": [
+        "src/repositories/adminRepo.ts:15 (sensitive-data-exposure)"
+      ],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6572,
+      "usage": {
+        "inputTokens": 5471,
+        "inputTokenDetails": {
+          "noCacheTokens": 5471,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 322,
+        "outputTokenDetails": {
+          "textTokens": 322,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5793
+      }
+    },
+    {
+      "id": "17-leaderboard-sort",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/utils/leaderboard.ts:11",
+          "cited": "src/utils/leaderboard.ts:11",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "wrong-comparator"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6613,
+      "usage": {
+        "inputTokens": 5013,
+        "inputTokenDetails": {
+          "noCacheTokens": 5013,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 243,
+        "outputTokenDetails": {
+          "textTokens": 243,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5256
+      }
+    },
+    {
+      "id": "18-timezone-daily-rollover",
+      "recall": 1,
+      "matched": [
+        {
+          "expected": "src/jobs/dailyReport.ts:8",
+          "cited": "src/jobs/dailyReport.ts:7",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "timezone"
+        },
+        {
+          "expected": "src/api/reports.ts:9",
+          "cited": "src/api/reports.ts:10",
+          "severity": "critical",
+          "expectedSeverity": "warning",
+          "category": "error-leak"
+        }
+      ],
+      "missed": [],
+      "falsePositives": [
+        "src/jobs/dailyReport.ts:16 [warning] Idempotency missing",
+        "src/api/reports.ts:5 [suggestion] API response structure"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 22022,
+      "usage": {
+        "inputTokens": 8073,
+        "inputTokenDetails": {
+          "noCacheTokens": 8073,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 877,
+        "outputTokenDetails": {
+          "textTokens": 877,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 8950
+      }
+    },
+    {
+      "id": "19-config-prototype-pollution",
+      "recall": 0,
+      "matched": [],
+      "missed": [
+        "src/lib/deepMerge.ts:14 (prototype-pollution)"
+      ],
+      "falsePositives": [
+        "src/lib/deepMerge.ts:8 [critical] Prototype Pollution Vulnerability",
+        "src/api/settings.ts:7 [critical] Mutation of global state"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 7133,
+      "usage": {
+        "inputTokens": 5378,
+        "inputTokenDetails": {
+          "noCacheTokens": 5378,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 635,
+        "outputTokenDetails": {
+          "textTokens": 635,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 6013
+      }
+    },
+    {
+      "id": "20-admin-endpoint-missing-authz",
+      "recall": 0.5,
+      "matched": [
+        {
+          "expected": "src/app/api/admin/users/route.ts:19",
+          "cited": "src/app/api/admin/users/route.ts:17",
+          "severity": "warning",
+          "expectedSeverity": "warning",
+          "category": "open-redirect"
+        }
+      ],
+      "missed": [
+        "src/app/api/admin/users/route.ts:11 (missing-authz)"
+      ],
+      "falsePositives": [
+        "src/app/api/admin/users/route.ts:7 [critical] Missing Authorization Check"
+      ],
+      "stoppedBy": "model",
+      "consistency": "ok",
+      "postedCount": 1,
+      "durationMs": 6374,
+      "usage": {
+        "inputTokens": 5211,
+        "inputTokenDetails": {
+          "noCacheTokens": 5211,
+          "cacheReadTokens": 0
+        },
+        "outputTokens": 591,
+        "outputTokenDetails": {
+          "textTokens": 591,
+          "reasoningTokens": 0
+        },
+        "totalTokens": 5802
+      }
+    }
+  ]
+}

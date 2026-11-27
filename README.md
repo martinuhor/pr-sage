@@ -224,35 +224,45 @@ be diffed directly.
 
 ### Scored results
 
-The numbers below are a real run — `gemini-3.5-flash-lite` on Google AI Studio's free tier, all 20
-fixtures, line tolerance ±2. The raw per-fixture record is checked in at
-[`evals/results/published/gemini-3.5-flash-lite.json`](evals/results/published/gemini-3.5-flash-lite.json);
-`--validate` reports `20 fixtures valid` on the same corpus with zero model calls.
+Two real runs over the same 20 fixtures, identical tools, tolerance and scoring code. Both are on
+Google AI Studio's free tier; the raw per-fixture records are checked in under
+[`evals/results/published/`](evals/results/published/), and `--validate` reports
+`20 fixtures valid` on the same corpus with zero model calls.
 
-| Metric | Value | |
+| Metric | `gemini-3.5-flash-lite` | `gemini-3.1-flash-lite` |
 |---|---|---|
-| Recall | **81%** | 29 of 36 planted bugs found |
-| Precision | **67%** | 29 of 43 comments were real |
-| F1 | **73%** | |
-| False-positive rate | **33%** | 14 spurious comments |
-| Severity accuracy | **55%** | on matched comments |
-| Token usage | 129,961 in / 14,486 out | |
-| Wall clock | 646s | throttled to stay inside the free tier's 15 req/min |
+| Recall | 81% (29/36) | 81% (29/36) |
+| Precision | 67% (29/43) | **78%** (29/37) |
+| F1 | 73% | **79%** |
+| False-positive rate | 33% (14) | **22%** (8) |
+| Severity accuracy | 55% | 55% |
+| Tokens (in / out) | 129,961 / 14,486 | **112,391 / 9,654** |
+| Wall clock | 646s | 3103s |
 
-Two things this run establishes beyond the headline numbers:
+**Same recall, different bugs.** Both scored 81% — but not on the same 29 bugs. They agree on 25;
+each found 4 the other missed, so their union covers **33 of 36 planted bugs (92%)**. Twelve of the
+twenty fixtures have identical bug sets, and the rest differ on *which* bug was caught, *which line*
+was cited, or *how severe* it was graded.
 
-- **The single-source-of-truth property holds.** Every one of the 20 fixtures reported
-  `consistency: ok` — the payload streamed to the browser and the payload posted to GitHub were
-  byte-identical, asserted rather than assumed. Zero fixtures failed to produce a valid `post_review`
-  call.
-- **The ceiling is the model, not the harness.** On a small, cheap model the misses cluster in
-  *severity calibration* (55%) and near-miss line citations rather than in finding bugs at all — the
-  per-fixture record lists each `nearMiss` with the line delta. That is exactly the signal
-  `--model` exists to measure: run the same corpus against a stronger model and diff the two files.
+That is the argument for keeping the per-fixture record next to the scoreboard: an identical headline
+recall hides a different bug set. It also splits one question into two. As a single model,
+`3.1-flash-lite` is the better choice here — same recall, higher precision, half the spurious comments
+and ~14% fewer input tokens. As a *second opinion*, `3.5-flash-lite` is the useful one: it catches
+four bugs 3.1 misses, and an ensemble of the two would have reached 92% recall where either alone
+reached 81%.
 
-Recall-per-dollar is the intended framing, and it is deliberately not computed here: the free tier
-has no per-token price, so a dollar figure would be invented. On a metered provider the token counts
-above are what the division needs.
+**The single-source-of-truth property holds on both runs.** All 20 fixtures in each reported
+`consistency: ok` — the payload streamed to the browser and the payload posted to GitHub were
+byte-identical, asserted rather than assumed. Zero fixtures hit a stream error or failed to produce a
+valid `post_review` call.
+
+Wall clock is the one figure to read with care: it is dominated by the throttling needed to stay
+inside the free tier's per-minute cap, and per-request latency on a shared tier is load dependent, so
+it is not the stable model-vs-model signal that the quality metrics are.
+
+Recall-per-dollar is the intended framing and is deliberately not computed here: the free tier has no
+per-token price, so a dollar figure would be invented. On a metered provider the token counts above
+are what the division needs.
 
 ### Comparing models
 
@@ -261,9 +271,15 @@ code, tolerance — stays fixed. That makes model choice a measurable decision i
 
 ```bash
 npm run eval -- --model=gemini-3.5-flash-lite          # Google AI Studio (free tier)
+npm run eval -- --model=gemini-3.1-flash-lite          # the second run scored above
 npm run eval -- --model=anthropic/claude-sonnet-4-5    # Vercel AI Gateway (needs billing verification)
 npm run eval -- --model=openai/gpt-5                   # Vercel AI Gateway
 ```
+
+On a free-tier key expect to be limited to the lite class: the larger Gemini ids answer
+`429 RESOURCE_EXHAUSTED` or `503 UNAVAILABLE` without billing, which is what constrained both runs
+above. With billing enabled the same command scores a stronger model against the same corpus, and the
+two result files diff directly.
 
 The question this is built to answer is cost against recall: **how much review quality is actually
 given up by running a cheaper model**, expressed as recall per dollar of `review.input_tokens` +
@@ -364,10 +380,14 @@ These are unimplemented, and the README says so rather than implying otherwise:
   merge-base, the base branch, or any other ref.
 - **No per-PR concurrency control.** Two events for the same PR could start two reviews.
 - **`--tolerance` is global.** The line-matching slack is the same for every fixture.
-- **One scored run, one model.** The published run is `gemini-3.5-flash-lite` on the free tier. There
-  is no second scored run to diff against yet, so the model-comparison framing is demonstrated rather
-  than populated — and recall-per-dollar is absent, because the free tier has no per-token price to
-  divide by.
+- **Both scored runs are lite-class.** Free-tier quota gated the comparison to two lite models
+  (`gemini-3.5-flash-lite` and `gemini-3.1-flash-lite`); every larger Gemini id returned
+  `429 RESOURCE_EXHAUSTED` or `503 UNAVAILABLE` without billing, so a cheap-vs-strong comparison is
+  still unmeasured. Recall-per-dollar is likewise absent, because the free tier has no per-token price
+  to divide by.
+- **One run per model.** Each figure above comes from a single pass, so it carries no variance
+  estimate; an identical 81% recall from both models is not evidence that they are equivalent, and
+  the per-fixture records show they are not.
 
 ## Tricky bugs, and why
 
